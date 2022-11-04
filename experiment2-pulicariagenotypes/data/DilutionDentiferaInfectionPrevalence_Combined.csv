@@ -1,0 +1,15 @@
+PulicariaLine,Treatment,Parasite,N,Total_Infected,Prevalence
+Mid67,diluter,Metschnikowia,35,2,0.057142857
+BA,diluter,Metschnikowia,30,2,0.066666667
+Pine,diluter,Metschnikowia,34,0,0
+Clover,diluter,Metschnikowia,33,1,0.03030303
+W,diluter,Metschnikowia,35,1,0.028571429
+Clear5,diluter,Metschnikowia,35,1,0.028571429
+Control,control,Metschnikowia,67,39,0.582089552
+Mid67,diluter,Pasteuria,35,2,0.057142857
+BA,diluter,Pasteuria,29,1,0.034482759
+Pine,diluter,Pasteuria,35,0,0
+Clover,diluter,Pasteuria,32,4,0.125
+W,diluter,Pasteuria,34,2,0.058823529
+Clear5,diluter,Pasteuria,33,0,0
+Control,control,Pasteuria,69,27,0.391304348

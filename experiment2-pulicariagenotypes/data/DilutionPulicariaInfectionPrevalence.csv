@@ -1,0 +1,83 @@
+PulicariaLine,Parasite,Rep,Code,HostSpp,Total_N,Total_Infected,Prevalence,White Globs,Gut_symptoms,Notes
+Mid67,Metschnikowia,A,M8A,pulicaria,5,0,0,NA,0,
+Mid67,Metschnikowia,B,M8B,pulicaria,1,0,0,NA,6,
+Mid67,Metschnikowia,C,M8C,pulicaria,0,0,0,NA,6,
+Mid67,Metschnikowia,D,M8D,pulicaria,7,0,0,NA,2,
+Mid67,Metschnikowia,E,M8E,pulicaria,1,0,0,1,3,fully healthy
+Mid67,Metschnikowia,F,M8F,pulicaria,6,0,0,0,5,"one with white globs along gut, no gut symptoms or spores present"
+Mid67,Metschnikowia,G,M8G,pulicaria,4,0,0,1,1,fully healthy
+BA,Metschnikowia,A,M8A,pulicaria,8,0,0,0,0,6/14 one died
+BA,Metschnikowia,B,M8B,pulicaria,6,0,0,1,0,"1 died, not sure if infected"
+BA,Metschnikowia,C,M8C,pulicaria,8,0,0,0,0,
+BA,Metschnikowia,D,M8D,pulicaria,7,0,0,0,0,
+BA,Metschnikowia,E,M8E,pulicaria,8,0,0,0,0,
+BA,Metschnikowia,F,M8F,pulicaria,8,0,0,0,0,
+Pine,Metschnikowia,A,M8A,pulicaria,8,0,0,3,0,
+Pine,Metschnikowia,B,M8B,pulicaria,7,0,0,3,0,very light infection
+Pine,Metschnikowia,C,M8C,pulicaria,8,0,0,5,0,very light infection
+Pine,Metschnikowia,D,M8D,pulicaria,7,0,0,7,0,
+Pine,Metschnikowia,E,M8E,pulicaria,8,0,0,6,0,
+Pine,Metschnikowia,F,M8F,pulicaria,8,0,0,5,0,very light infection
+Pine,Metschnikowia,G,M8G,pulicaria,7,0,0,4,0,light infections
+Clover,Metschnikowia,A,M8A,pulicaria,7,0,0,4,0,no white globs. 6/14 smashed VR
+Clover,Metschnikowia,B,M8B,pulicaria,8,0,0,7,0,
+Clover,Metschnikowia,C,M8C,pulicaria,7,0,0,6,0,"several with white globs by heart, not metsch"
+Clover,Metschnikowia,D,M8D,pulicaria,7,0,0,6,0,data not collected on last day. 1 with something in brood chamber
+Clover,Metschnikowia,E,M8E,pulicaria,7,0,0,5,0,"one sacrificed, but it was not metsch 6/24"
+Clover,Metschnikowia,F,M8F,pulicaria,7,0,0,7,0,
+Clover,Metschnikowia,G,M8G,pulicaria,8,0,0,6,0,4/8 have white globs
+W,Metschnikowia,A,M8A,pulicaria,7,0,0,2,0,
+W,Metschnikowia,B,M8B,pulicaria,7,0,0,2,0,
+W,Metschnikowia,C,M8C,pulicaria,8,0,0,3,0,1 with something strange in brood chamber
+W,Metschnikowia,D,M8D,pulicaria,8,0,0,3,0,Fed lots extra on 6/10
+W,Metschnikowia,E,M8E,pulicaria,8,0,0,0,0,very light infections
+W,Metschnikowia,F,M8F,pulicaria,8,0,0,2,0,animal with white globs died 6/24
+W,Metschnikowia,G,M8G,pulicaria,8,0,0,1,0,
+Clear5,Metschnikowia,A,M8A,pulicaria,7,0,0,0,0,
+Clear5,Metschnikowia,B,M8B,pulicaria,8,0,0,0,0,
+Clear5,Metschnikowia,C,M8C,pulicaria,7,0,0,0,0,
+Clear5,Metschnikowia,D,M8D,pulicaria,7,0,0,1,0,very light infection
+Clear5,Metschnikowia,E,M8E,pulicaria,8,0,0,0,0,very light infection
+Clear5,Metschnikowia,F,M8F,pulicaria,8,0,0,0,0,
+Clear5,Metschnikowia,G,M8G,pulicaria,8,0,0,1,0,3 with same strange thing in brood chamber
+Mid67,Pasteuria,A,P8A,pulicaria,4,0,0,1,1,
+Mid67,Pasteuria,B,P8B,pulicaria,8,0,0,0,0,
+Mid67,Pasteuria,C,P8C,pulicaria,3,0,0,2,0,
+Mid67,Pasteuria,D,P8D,pulicaria,4,0,0,0,1,
+Mid67,Pasteuria,E,P8E,pulicaria,2,0,0,1,0,
+Mid67,Pasteuria,F,P8F,pulicaria,3,0,0,0,1,
+Mid67,Pasteuria,G,P8G,pulicaria,3,0,0,2,0,
+BA,Pasteuria,A,P8A,pulicaria,8,0,0,0,0,
+BA,Pasteuria,B,P8B,pulicaria,7,0,0,0,0,
+BA,Pasteuria,C,P8C,pulicaria,8,0,0,0,0,
+BA,Pasteuria,D,P8D,pulicaria,8,0,0,0,0,
+BA,Pasteuria,E,P8E,pulicaria,8,0,0,0,0,
+BA,Pasteuria,F,P8F,pulicaria,8,0,0,0,0,
+Pine,Pasteuria,A,P8A,pulicaria,8,0,0,0,2,
+Pine,Pasteuria,B,P8B,pulicaria,7,0,0,0,2,
+Pine,Pasteuria,C,P8C,pulicaria,7,0,0,0,0,
+Pine,Pasteuria,D,P8D,pulicaria,8,0,0,0,2,
+Pine,Pasteuria,E,P8E,pulicaria,8,0,0,0,3,
+Pine,Pasteuria,F,P8F,pulicaria,8,0,0,0,1,
+Pine,Pasteuria,G,P8G,pulicaria,7,0,0,0,2,
+Clover,Pasteuria,A,P8A,pulicaria,7,0,0,0,5,
+Clover,Pasteuria,B,P8B,pulicaria,8,0,0,0,8,
+Clover,Pasteuria,C,P8C,pulicaria,7,0,0,0,0,
+Clover,Pasteuria,D,P8D,pulicaria,7,0,0,0,5,
+Clover,Pasteuria,E,P8E,pulicaria,5,0,0,0,4,
+Clover,Pasteuria,F,P8F,pulicaria,7,0,0,0,6,"6/11, hit one with a pipette, it is still alive. injured?"
+Clover,Pasteuria,G,P8G,pulicaria,6,0,0,0,3,1 male
+W,Pasteuria,A,P8A,pulicaria,8,0,0,0,0,
+W,Pasteuria,B,P8B,pulicaria,7,0,0,0,0,
+W,Pasteuria,C,P8C,pulicaria,8,0,0,0,2,
+W,Pasteuria,D,P8D,pulicaria,8,0,0,0,0,
+W,Pasteuria,E,P8E,pulicaria,8,0,0,0,0,
+W,Pasteuria,F,P8F,pulicaria,8,0,0,0,0,
+W,Pasteuria,G,P8G,pulicaria,8,0,0,0,1,
+Clear5,Pasteuria,A,P8A,pulicaria,6,0,0,0,0,
+Clear5,Pasteuria,B,P8B,pulicaria,7,0,0,0,0,
+Clear5,Pasteuria,C,P8C,pulicaria,7,0,0,0,0,
+Clear5,Pasteuria,D,P8D,pulicaria,6,0,0,0,0,
+Clear5,Pasteuria,E,P8E,pulicaria,6,0,0,0,0,
+Clear5,Pasteuria,F,P8F,pulicaria,5,0,0,0,0,
+Clear5,Pasteuria,G,P8G,pulicaria,4,0,0,1,0,

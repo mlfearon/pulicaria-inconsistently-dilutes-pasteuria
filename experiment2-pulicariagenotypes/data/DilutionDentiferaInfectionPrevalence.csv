@@ -1,0 +1,111 @@
+PulicariaLine,PulicariaLine2,Treatment,Parasite,Rep,Code,HostSpp,Total_N,N,Total_Infected,Prevalence,Notes
+Mid67,Mid67,diluter,Metschnikowia,A,M8A,dentifera,5,5,0,0,
+Mid67,Mid67,diluter,Metschnikowia,B,M8B,dentifera,5,5,1,0.2,
+Mid67,Mid67,diluter,Metschnikowia,C,M8C,dentifera,5,5,0,0,
+Mid67,Mid67,diluter,Metschnikowia,D,M8D,dentifera,5,5,1,0.2,infected died 6/14
+Mid67,Mid67,diluter,Metschnikowia,E,M8E,dentifera,5,5,0,0,
+Mid67,Mid67,diluter,Metschnikowia,F,M8F,dentifera,5,5,0,0,
+Mid67,Mid67,diluter,Metschnikowia,G,M8G,dentifera,5,5,0,0,
+BA,BA,diluter,Metschnikowia,A,M8A,dentifera,5,5,1,0.2,infected animal died 6/9 (day 7)
+BA,BA,diluter,Metschnikowia,B,M8B,dentifera,5,5,0,0,
+BA,BA,diluter,Metschnikowia,C,M8C,dentifera,5,5,0,0,
+BA,BA,diluter,Metschnikowia,D,M8D,dentifera,5,5,0,0,
+BA,BA,diluter,Metschnikowia,E,M8E,dentifera,5,5,0,0,
+BA,BA,diluter,Metschnikowia,F,M8F,dentifera,5,5,1,0.2,
+Pine,Pine,diluter,Metschnikowia,A,M8A,dentifera,5,5,0,0,
+Pine,Pine,diluter,Metschnikowia,B,M8B,dentifera,5,5,0,0,
+Pine,Pine,diluter,Metschnikowia,C,M8C,dentifera,5,5,0,0,
+Pine,Pine,diluter,Metschnikowia,D,M8D,dentifera,5,5,0,0,
+Pine,Pine,diluter,Metschnikowia,E,M8E,dentifera,5,5,0,0,
+Pine,Pine,diluter,Metschnikowia,F,M8F,dentifera,5,5,0,0,
+Pine,Pine,diluter,Metschnikowia,G,M8G,dentifera,4,4,0,0,
+Clover,Clover,diluter,Metschnikowia,A,M8A,dentifera,5,5,0,0,
+Clover,Clover,diluter,Metschnikowia,B,M8B,dentifera,6,5,0,0,"one pulicaria, covered in algae, white along ovaries"
+Clover,Clover,diluter,Metschnikowia,C,M8C,dentifera,5,5,0,0,
+Clover,Clover,diluter,Metschnikowia,D,M8D,dentifera,5,5,1,0.2,
+Clover,Clover,diluter,Metschnikowia,E,M8E,dentifera,5,4,0,0,one male
+Clover,Clover,diluter,Metschnikowia,F,M8F,dentifera,4,4,0,0,
+Clover,Clover,diluter,Metschnikowia,G,M8G,dentifera,5,5,0,0,
+W,W,diluter,Metschnikowia,A,M8A,dentifera,5,5,0,0,
+W,W,diluter,Metschnikowia,B,M8B,dentifera,5,5,0,0,
+W,W,diluter,Metschnikowia,C,M8C,dentifera,5,5,0,0,
+W,W,diluter,Metschnikowia,D,M8D,dentifera,5,5,0,0,
+W,W,diluter,Metschnikowia,E,M8E,dentifera,5,5,0,0,
+W,W,diluter,Metschnikowia,F,M8F,dentifera,5,5,1,0.2,
+W,W,diluter,Metschnikowia,G,M8G,dentifera,5,5,0,0,
+Clear5,Clear5,diluter,Metschnikowia,A,M8A,dentifera,5,5,0,0,
+Clear5,Clear5,diluter,Metschnikowia,B,M8B,dentifera,5,5,0,0,
+Clear5,Clear5,diluter,Metschnikowia,C,M8C,dentifera,5,5,1,0.2,
+Clear5,Clear5,diluter,Metschnikowia,D,M8D,dentifera,5,5,0,0,
+Clear5,Clear5,diluter,Metschnikowia,E,M8E,dentifera,5,5,0,0,
+Clear5,Clear5,diluter,Metschnikowia,F,M8F,dentifera,5,5,0,0,
+Clear5,Clear5,diluter,Metschnikowia,G,M8G,dentifera,5,5,0,0,
+Control1,Control,control,Metschnikowia,A,M0A,dentifera,5,5,5,1,infected died 6/10 + 6/12 + 6/14
+Control1,Control,control,Metschnikowia,B,M0B,dentifera,4,4,3,0.75,
+Control1,Control,control,Metschnikowia,C,M0C,dentifera,5,5,1,0.2,infected died 6/14
+Control1,Control,control,Metschnikowia,D,M0D,dentifera,5,5,1,0.2,
+Control1,Control,control,Metschnikowia,E,M0E,dentifera,5,5,3,0.6,MLF squished infected animal on 6/9; infected died 6/10 + 6/14
+Control1,Control,control,Metschnikowia,F,M0F,dentifera,5,5,2,0.4,2 infected died 6/14
+Control1,Control,control,Metschnikowia,G,M0G,dentifera,5,4,3,0.75,"one male, infected died on 6/9; one male not infected"
+Control2,Control,control,Metschnikowia,A,M0A,dentifera,4,4,2,0.5,
+Control2,Control,control,Metschnikowia,B,M0B,dentifera,5,5,3,0.6,
+Control2,Control,control,Metschnikowia,C,M0C,dentifera,5,5,2,0.4,
+Control2,Control,control,Metschnikowia,D,M0D,dentifera,5,5,3,0.6,infected died 6/12 + 6/14
+Control2,Control,control,Metschnikowia,E,M0E,dentifera,5,5,5,1,
+Control2,Control,control,Metschnikowia,F,M0F,dentifera,5,5,3,0.6,infected died 6/12
+Control2,Control,control,Metschnikowia,G,M0G,dentifera,5,5,3,0.6,infected died 6/14
+Mid67,Mid67,diluter,Pasteuria,A,P8A,dentifera,5,5,0,0,
+Mid67,Mid67,diluter,Pasteuria,B,P8B,dentifera,5,5,1,0.2,"1 brood infection (cleared by 6/26 actually not infected, must have been an aborted embyro)"
+Mid67,Mid67,diluter,Pasteuria,C,P8C,dentifera,5,5,0,0,
+Mid67,Mid67,diluter,Pasteuria,D,P8D,dentifera,5,5,0,0,
+Mid67,Mid67,diluter,Pasteuria,E,P8E,dentifera,5,5,0,0,
+Mid67,Mid67,diluter,Pasteuria,F,P8F,dentifera,5,5,1,0.2,"1 is pulicaria, removed and placed in separate beaker (not infected)"
+Mid67,Mid67,diluter,Pasteuria,G,P8G,dentifera,5,5,0,0,
+BA,BA,diluter,Pasteuria,A,P8A,dentifera,5,5,0,0,
+BA,BA,diluter,Pasteuria,B,P8B,dentifera,5,5,0,0,may have mistaken infection. 
+BA,BA,diluter,Pasteuria,C,P8C,dentifera,5,5,1,0.2,inf. died 6/25
+BA,BA,diluter,Pasteuria,D,P8D,dentifera,5,4,0,0,1 White Spiro infection!! On day 9 post-exposure; not Pasteuria separated from others in beaker
+BA,BA,diluter,Pasteuria,E,P8E,dentifera,5,5,0,0,
+BA,BA,diluter,Pasteuria,F,P8F,dentifera,5,5,0,0,1 dentifera found in Pine B beaker next in sequence. Not infected
+Pine,Pine,diluter,Pasteuria,A,P8A,dentifera,5,5,0,0,
+Pine,Pine,diluter,Pasteuria,B,P8B,dentifera,5,5,0,0,"1 is pulicaria, removed and placed in separate beaker (not infected)"
+Pine,Pine,diluter,Pasteuria,C,P8C,dentifera,5,5,0,0,
+Pine,Pine,diluter,Pasteuria,D,P8D,dentifera,5,5,0,0,
+Pine,Pine,diluter,Pasteuria,E,P8E,dentifera,5,5,0,0,
+Pine,Pine,diluter,Pasteuria,F,P8F,dentifera,5,5,0,0,
+Pine,Pine,diluter,Pasteuria,G,P8G,dentifera,5,5,0,0,
+Clover,Clover,diluter,Pasteuria,A,P8A,dentifera,5,5,0,0,
+Clover,Clover,diluter,Pasteuria,B,P8B,dentifera,5,5,2,0.4,
+Clover,Clover,diluter,Pasteuria,C,P8C,dentifera,5,4,0,0,"1 is male, kept in beaker (not infected)"
+Clover,Clover,diluter,Pasteuria,D,P8D,dentifera,5,5,1,0.2,
+Clover,Clover,diluter,Pasteuria,E,P8E,dentifera,5,5,0,0,
+Clover,Clover,diluter,Pasteuria,F,P8F,dentifera,4,4,1,0.25,1 White Spiro 6/25
+Clover,Clover,diluter,Pasteuria,G,P8G,dentifera,5,4,0,0,"1 is male, kept in beaker"
+W,W,diluter,Pasteuria,A,P8A,dentifera,5,4,0,0,1 pulicaria
+W,W,diluter,Pasteuria,B,P8B,dentifera,5,5,1,0.2,
+W,W,diluter,Pasteuria,C,P8C,dentifera,5,5,0,0,
+W,W,diluter,Pasteuria,D,P8D,dentifera,5,5,1,0.2,
+W,W,diluter,Pasteuria,E,P8E,dentifera,5,5,0,0,
+W,W,diluter,Pasteuria,F,P8F,dentifera,5,5,0,0,
+W,W,diluter,Pasteuria,G,P8G,dentifera,5,5,0,0,
+Clear5,Clear5,diluter,Pasteuria,A,P8A,dentifera,5,5,0,0,
+Clear5,Clear5,diluter,Pasteuria,B,P8B,dentifera,5,5,0,0,
+Clear5,Clear5,diluter,Pasteuria,C,P8C,dentifera,5,5,0,0,
+Clear5,Clear5,diluter,Pasteuria,D,P8D,dentifera,5,5,0,0,
+Clear5,Clear5,diluter,Pasteuria,E,P8E,dentifera,5,5,0,0,
+Clear5,Clear5,diluter,Pasteuria,F,P8F,dentifera,5,3,0,0,"1 is male, kept in beaker. Also 1 very small animal that has both male and female characteristics"
+Clear5,Clear5,diluter,Pasteuria,G,P8G,dentifera,5,5,0,0,
+Control1,Control,control,Pasteuria,A,P0A,dentifera,5,5,2,0.4,infected died 6/25
+Control1,Control,control,Pasteuria,B,P0B,dentifera,5,5,3,0.6,
+Control1,Control,control,Pasteuria,C,P0C,dentifera,4,4,0,0,
+Control1,Control,control,Pasteuria,D,P0D,dentifera,5,5,4,0.8,infected died 6/15 + 6/25
+Control1,Control,control,Pasteuria,E,P0E,dentifera,5,5,1,0.2,
+Control1,Control,control,Pasteuria,F,P0F,dentifera,5,5,4,0.8,
+Control1,Control,control,Pasteuria,G,P0G,dentifera,5,5,1,0.2,infected has embryos
+Control2,Control,control,Pasteuria,A,P0A,dentifera,5,5,2,0.4,
+Control2,Control,control,Pasteuria,B,P0B,dentifera,5,5,1,0.2,
+Control2,Control,control,Pasteuria,C,P0C,dentifera,5,5,2,0.4,Possibly two more infections; infected died 6/25
+Control2,Control,control,Pasteuria,D,P0D,dentifera,5,5,2,0.4,
+Control2,Control,control,Pasteuria,E,P0E,dentifera,5,5,1,0.2,
+Control2,Control,control,Pasteuria,F,P0F,dentifera,5,5,0,0,
+Control2,Control,control,Pasteuria,G,P0G,dentifera,5,5,4,0.8,infected died 6/25
