@@ -4,6 +4,7 @@
 
 
 # libraries
+library(tidyverse)
 library(dplyr)
 library(lme4)
 library(glmmTMB)
@@ -15,6 +16,7 @@ library(car)
 library(MuMIn)
 library(emmeans)
 library(RColorBrewer)
+library(brms)
 library(here)
 
 # set the path to the script relative to the project root directory
@@ -403,6 +405,13 @@ plot(me4, add.data = F) +
 
 
 
+## Try dentifera metsch infection prevalence vs pulicaria genotype model with Bayesian methods
+#  initial model, uniform priors
+dent_metsch_BAYmod <- brm(Prevalence ~ PulicariaLine2, family = bernoulli(), weights = N, data = dentifera_metsch)
+summary(dent_metsch_BAYmod)
+
+
+
 
 
 
@@ -634,6 +643,32 @@ dim(dentifera_past)
 
 
 
+# convert data set into true binary output for infection [WORK IN PROGRESS]
+dentifera_past_binary <- dentifera_past %>%
+  uncount(N) %>%
+  group_by(Parasite, PulicariaLine, Rep) %>%
+  mutate(Infection = as.integer(row_number() <= Total_Infected[1])) %>%
+  select(PulicariaLine:Prevalence, Infection, Date:BodySize_mm_sd,Notes)
+
+
+View(dentifera_past_binary)
+
+model2 <- glm(Infection ~ PulicariaLine2,family = "binomial", data = dentifera_past_binary)  # this model should have random effects
+summary(model2)
+Anova(model2)
+h <- emmeans(model2, specs = pairwise ~ PulicariaLine2, type = "response")
+
+sum(dentifera_past_binary[ dentifera_past_binary$PulicariaLine2 == "Control" , "Infection"])
+
+sum(dentifera_past[ dentifera_past$PulicariaLine2 == "Control" , "Total_Infected"])
+
+
+
+
+
+
+
+
 ### attempt to analyze the data in a different way...ALL THE SAME OUTCOME
 data2 <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionDentiferaInfectionPrevalence_Combined.csv"), stringsAsFactors = F, header = T)
 head(data2)
@@ -644,12 +679,12 @@ summary(model)
 Anova(model)
 f <- emmeans(model, specs = pairwise ~ PulicariaLine, type = "response")
 
-
+# see if there is a better way to convert the original infection data into expanded binomial rather than doing it by hand
 data3 <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionDentiferaInfectionPrevalence_Expanded.csv"), stringsAsFactors = F, header = T)
 head(data3)
-pdata <- filter(data3, Parasite == "Pasteuria")
+pdata3 <- filter(data3, Parasite == "Pasteuria")
 
-model2 <- glm(Infected ~ PulicariaLine,family = "binomial", data = data)
+model2 <- glm(Infected ~ PulicariaLine,family = "binomial", data = pdata3)  # this model should have random effects
 summary(model2)
 Anova(model2)
 g <- emmeans(model2, specs = pairwise ~ PulicariaLine, type = "response")
