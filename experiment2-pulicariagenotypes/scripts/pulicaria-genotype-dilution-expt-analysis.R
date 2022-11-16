@@ -84,7 +84,7 @@ pulic_bodysize <- read.csv(here("experiment2-pulicariagenotypes", "data", "Dilut
 head(pulic_bodysize)
 pulic_bodysize <- arrange(pulic_bodysize, PulicariaLine)
 
-?order()
+
 
 # calculate mean and sd of pulicaria body sizes
 pulic_bodysize2 <- pulic_bodysize %>% 
@@ -112,14 +112,14 @@ size_dif
 # visualize differences in bodysize among different pulicaria genotypes
 me_size <- ggpredict(size_mod, c("PulicariaLine"))
 plot(me_size, add.data = T) +
-  labs(y= bquote("Body Size ("~ mu~"m)"), x = "Pulicaria Genotype", title = NULL) +
+  labs(y= bquote("Body Size ("*mu*"m)"), x = "Pulicaria Genotype", title = NULL) +
   geom_text(aes(y = 2100), label = c("a","a","b","ab","b", "ab"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
   theme(axis.text = element_text(size = 8, color = "black"), axis.title = element_text(size = 11, color = "black"))
-ggsave("Pulicaria_BodySize.tiff", dpi = 600, width = 3, height = 3.5, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Pulicaria_BodySize.tiff"), dpi = 600, width = 3, height = 3.5, units = "in", compression="lzw")
 
 
-
+## pulicaria genotypes have significantly different bodysizes
 
 
 # add body size to dentifera and pulicaria prevalence data
@@ -170,7 +170,7 @@ dentifera_past_lines$PulicariaLine2 <- factor(dentifera_past_lines$PulicariaLine
 
 
 #  comparison of pulicaria genotype and body size
-dent_metsch_mod <- glm(Prevalence ~ PulicariaLine * BodySize_mm, family = "binomial", weights = N, data = dentifera_metsch)
+dent_metsch_mod <- glm(Prevalence ~ PulicariaLine2 * BodySize_mm, family = "binomial", weights = N, data = dentifera_metsch_lines)
 summary(dent_metsch_mod)
 vif(dent_metsch_mod)
 plot(dent_metsch_mod)
@@ -178,13 +178,13 @@ Anova(dent_metsch_mod, test.statistic = "Wald")  # not significant interaction b
 overdisp_fun(dent_metsch_mod)
 
 # calculates the pairwise tests for each genus within each site 
-#(determines if there are sig differences in Pasteuria prev between each pulicaria genotpye for a given body size = 1.89 mm)
-a <- emmeans(dent_metsch_mod, specs = pairwise ~ PulicariaLine | BodySize_mm, type = "response")
+#(determines if there are sig differences in metsch prev between each pulicaria genotpye for a given body size = 1.89 mm)
+a <- emmeans(dent_metsch_mod, specs = pairwise ~ PulicariaLine2 | BodySize_mm, type = "response")
 a
 
 
 # plot of predicted values of prevalence by diluter density and diluter host species
-me <- ggpredict(dent_metsch_mod, c("PulicariaLine", "BodySize_mm"))
+me <- ggpredict(dent_metsch_mod, c("PulicariaLine2", "BodySize_mm"))
 plot(me, add.data = F)
 
 
@@ -218,7 +218,7 @@ b
 
 
 # plot of predicted values of prevalence by diluter genotype
-me2 <- ggpredict(dent_metsch_mod2, c("PulicariaLine2"), type = "zi.prob")
+me2 <- ggpredict(dent_metsch_mod2, c("PulicariaLine2"), type = "fixed")
 me2$x <- factor(me2$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
 
 
@@ -230,19 +230,19 @@ metsch_predict <- plot(me2, add.data = T, jitter = c(0.5,0.01), colors = pulic_c
   geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 metsch_predict
-ggsave("Metsch_PulicariaGenotype.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 
 
 # try with zero-inflated model
-dent_metsch_mod2a <- glmmTMB(Prevalence ~ PulicariaLine2, ziformula = ~PulicariaLine2, family = "binomial", weights = N, data = dentifera_metsch)
+dent_metsch_mod2a <- glmmTMB(Prevalence ~ PulicariaLine2, ziformula = ~PulicariaLine2, family = "binomial", weights = N, data = dentifera_metsch, na.action=na.omit)
 summary(dent_metsch_mod2a)
-Anova(dent_metsch_mod2a, test.statistic = "Wald")
+Anova(dent_metsch_mod2a, test.statistic = "Chisq")
 #plot(dent_metsch_mod2)
-overdisp_fun(dent_metsch_mod2a)
+#overdisp_fun(dent_metsch_mod2a)
 
 
 
@@ -255,7 +255,7 @@ b
 # plot of predicted values of prevalence by diluter genotype
 me2a <- ggpredict(dent_metsch_mod2a, c("PulicariaLine2"), type = "zi.prob")
 me2a$x <- factor(me2a$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
-
+View(me2a)
 
 pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
 
@@ -264,9 +264,9 @@ metsch_predict_a <- plot(me2a, add.data = T, jitter = c(0.5,0.01), colors = puli
   geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 metsch_predict_a
-ggsave("Metsch_PulicariaGenotype_zeroinf.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype_zeroinf.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 
@@ -295,9 +295,9 @@ metsch_predict_b <- plot(me2b, add.data = T, jitter = c(0.5,0.01), colors = puli
   geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 metsch_predict_b
-ggsave("Metsch_PulicariaGenotype_logistic.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype_logistic.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 
@@ -322,14 +322,14 @@ metsch_predict_c <- plot(me2c, add.data = T, jitter = c(0.5,0.01), colors = puli
   geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 metsch_predict_c
-ggsave("Metsch_PulicariaGenotype_logistic2.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype_logistic2.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 library(logistf)
 # try the model above with a logistic regression with added covariate (to help model predictions!)
-dent_metsch_mod2d <- flac(lfobject = dent_metsch_mod2b)
+dent_metsch_mod2d <- flac(lfobject = dent_metsch_mod2b, data = dentifera_metsch)
 summary(dent_metsch_mod2d)
 
 predict(dent_metsch_mod2d, type = "response")
@@ -359,9 +359,9 @@ metsch_predict_e <- plot(me2e, add.data = T, jitter = c(0.5,0.01), colors = puli
   geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 metsch_predict_e
-ggsave("Metsch_PulicariaGenotype_logistic3.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype_logistic3.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 
@@ -372,7 +372,7 @@ ggsave("Metsch_PulicariaGenotype_logistic3.tiff", dpi = 600, width = 5, height =
 
 
 ### There is a significant difference between pulicaria diluters and control treatments, but there is not a significant 
-### difference among the pulicaria lines, nor with boysize
+### difference among the pulicaria lines, nor with bodysize
 
 
 #  comparison of pulicaria bodysize against Metsch prevalence in dentifera
