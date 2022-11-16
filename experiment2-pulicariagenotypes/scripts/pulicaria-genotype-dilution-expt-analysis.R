@@ -3,9 +3,6 @@
 # Code written by Michelle Fearon
 
 
-setwd("C:/Users/mlfea/OneDrive/Documents/PROJECTS/MHMP Daphnia Duffy/Generality of dilution (MHMP)/Pulicaria dilution paper/Pulicaria dilution experiment 2 (Michelle)")
-
-
 # libraries
 library(dplyr)
 library(lme4)
@@ -18,6 +15,10 @@ library(car)
 library(MuMIn)
 library(emmeans)
 library(RColorBrewer)
+library(here)
+
+# set the path to the script relative to the project root directory
+here::i_am("experiment2-pulicariagenotypes/scripts/pulicaria-genotype-dilution-expt-analysis.R")
 
 
 # function to make a grid plot with a shared legend
@@ -69,17 +70,17 @@ overdisp_fun <- function(model) {
 
 
 # Pasteuria and Metschnikowia prevalence data in Daphnia dentifera
-dentifera_data <- read.csv("DilutionDentiferaInfectionPrevalence.csv", stringsAsFactors = F, header = T)
+dentifera_data <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionDentiferaInfectionPrevalence.csv"), stringsAsFactors = F, header = T)
 head(dentifera_data)
 
 
 # Pasteuria and Metschnikowia prevalence data in Daphnia pulicaria
-pulicaria_data <- read.csv("DilutionPulicariaInfectionPrevalence.csv", stringsAsFactors = F, header = T)
+pulicaria_data <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionPulicariaInfectionPrevalence.csv"), stringsAsFactors = F, header = T)
 head(pulicaria_data)
 
 
 ## Body Size data 
-pulic_bodysize <- read.csv("DilutionPulicariaBodySize.csv", stringsAsFactors = F, header = T)
+pulic_bodysize <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionPulicariaBodySize.csv"), stringsAsFactors = F, header = T)
 head(pulic_bodysize)
 pulic_bodysize <- arrange(pulic_bodysize, PulicariaLine)
 
