@@ -366,11 +366,6 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenoty
 
 
 
-
-
-
-
-
 ### There is a significant difference between pulicaria diluters and control treatments, but there is not a significant 
 ### difference among the pulicaria lines, nor with bodysize
 
@@ -408,11 +403,17 @@ plot(me4, add.data = F) +
 
 
 
+
+
+
+
+
+
 ### Dentifera Pasteuria prevalence models
 
 
 #  comparison of pulicaria genotype and body size
-dent_past_mod <- glm(Prevalence ~ PulicariaLine * BodySize_mm, family = "binomial", weights = N, data = dentifera_past)
+dent_past_mod <- glm(Prevalence ~ PulicariaLine2 * BodySize_mm, family = "binomial", weights = N, data = dentifera_past_lines)
 summary(dent_past_mod)  #something isn't quite right about this model, weird predictions
 vif(dent_past_mod)
 Anova(dent_past_mod, test.statistic = "Wald")
@@ -474,13 +475,13 @@ past_predict <- plot(me5, add.data = T, jitter = c(0.5,0.01), colors = pulic_col
   theme_classic() +
   theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 9, color = "black"))
 past_predict
-ggsave("Pasteuria_PulicariaGenotype.tiff", plot = past_predict, dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Pasteuria_PulicariaGenotype.tiff"), plot = past_predict, dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 ## Figure 3
 # joint figure of pasteuria and metsch prevalence vs pulicaria genotype
 Figure <- ggarrange(past_predict, metsch_predict, labels = c("A", "B"),ncol = 1, nrow = 2)
-ggsave("Prevalence_PulicariaGenotype.tiff", plot = Figure, dpi = 600, width = 4, height = 6, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Prevalence_PulicariaGenotype.tiff"), plot = Figure, dpi = 600, width = 4, height = 6, units = "in", compression="lzw")
 
 
 # past_predict <- ggplot(data = dentifera_past, aes(x = PulicariaLine, y = Prevalence)) +
@@ -523,7 +524,7 @@ past_predict_b <- plot(me2b, add.data = T, jitter = c(0.5,0.01), colors = pulic_
   theme_classic() +
   theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
 past_predict_b
-ggsave("past_PulicariaGenotype_logistic.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "past_PulicariaGenotype_logistic.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 
@@ -550,11 +551,11 @@ past_predict_c <- plot(me2c, add.data = T, jitter = c(0.5,0.01), colors = pulic_
   theme_classic() +
   theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
 past_predict_c
-ggsave("past_PulicariaGenotype_logistic2.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "past_PulicariaGenotype_logistic2.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 # try the model above with a logistic regression with added covariate (to help model predictions!)
-dent_past_mod2d <- flac(lfobject = dent_past_mod2b)
+dent_past_mod2d <- flac(lfobject = dent_past_mod2b, data = dentifera_past)
 summary(dent_past_mod2d)
 
 predict(dent_past_mod2d, type = "response")
@@ -586,7 +587,7 @@ past_predict_e <- plot(me2e, add.data = T, jitter = c(0.5,0.01), colors = pulic_
   theme_classic() +
   theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
 past_predict_e
-ggsave("past_PulicariaGenotype_logistic3.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "past_PulicariaGenotype_logistic3.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 
@@ -634,9 +635,9 @@ dim(dentifera_past)
 
 
 ### attempt to analyze the data in a different way...ALL THE SAME OUTCOME
-data2 <- read.csv("DilutionDentiferaInfectionPrevalence_Combined.csv", stringsAsFactors = F, header = T)
+data2 <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionDentiferaInfectionPrevalence_Combined.csv"), stringsAsFactors = F, header = T)
 head(data2)
-pdata <- filter(data, Parasite == "Pasteuria")
+pdata <- filter(data2, Parasite == "Pasteuria")
 
 model <- glm(Prevalence ~ PulicariaLine,family = "binomial", weights = N, data = pdata)
 summary(model)
@@ -644,9 +645,9 @@ Anova(model)
 f <- emmeans(model, specs = pairwise ~ PulicariaLine, type = "response")
 
 
-data <- read.csv("DilutionDentiferaInfectionPrevalence_Expanded.csv", stringsAsFactors = F, header = T)
-head(data)
-pdata <- filter(data, Parasite == "Pasteuria")
+data3 <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionDentiferaInfectionPrevalence_Expanded.csv"), stringsAsFactors = F, header = T)
+head(data3)
+pdata <- filter(data3, Parasite == "Pasteuria")
 
 model2 <- glm(Infected ~ PulicariaLine,family = "binomial", data = data)
 summary(model2)
