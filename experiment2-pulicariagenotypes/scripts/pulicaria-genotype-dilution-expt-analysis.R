@@ -658,57 +658,67 @@ dentifera_past_binary <- dentifera_past %>%
   mutate(Infection = as.integer(row_number() <= Total_Infected[1])) %>%
   select(PulicariaLine:Prevalence, Infection, Date:BodySize_mm_sd,Notes)
 
+dentifera_past_binary_diluters <- dentifera_past_binary %>%
+  filter(Treatment == "diluter")
 
 View(dentifera_past_binary)
 
-model2 <- glm(Infection ~ PulicariaLine2,family = "binomial", data = dentifera_past_binary)  # this model should have random effects
+model1 <- glmer(Infection ~ Treatment + (1|PulicariaLine2/Rep),family = "binomial", data = dentifera_past_binary)  # this model should have random effects
+summary(model1)
+Anova(model1)
+overdisp_fun(model1)
+h <- emmeans(model1, specs = pairwise ~ PulicariaLine2, type = "response")
+
+model2 <- glmer(Infection ~ PulicariaLine2 + (1|PulicariaLine2:Rep),family = "binomial", data = dentifera_past_binary_diluters)  # this model should have random effects
 summary(model2)
 Anova(model2)
-h <- emmeans(model2, specs = pairwise ~ PulicariaLine2, type = "response")
-
-sum(dentifera_past_binary[ dentifera_past_binary$PulicariaLine2 == "Control" , "Infection"])
-
-sum(dentifera_past[ dentifera_past$PulicariaLine2 == "Control" , "Total_Infected"])
+overdisp_fun(model2)
+h2 <- emmeans(model2, specs = pairwise ~ PulicariaLine2, type = "response")
 
 
 
 
 
+### Bayesian Analysis of Pasteuria data
+
+## Try dentifera past infection prevalence vs control/duluter treatment with Bayesian methods
+#  initial model, uniform priors
+dent_past_BAYmod <- brm(Infection ~ Treatment + (1|PulicariaLine2/Rep), family = bernoulli(), data = dentifera_past_binary, control = list(adapt_delta = 0.98))
+summary(dent_past_BAYmod)
+plot(dent_past_BAYmod)
+bayes_R2(dent_past_BAYmod)
+mcmc_plot(dent_past_BAYmod)
+mcmc_plot(dent_past_BAYmod, type = "hist", binwidth = 0.05)
+mcmc_plot(dent_past_BAYmod, type = "areas_ridges", prob = 0.5)
+prior_summary(dent_past_BAYmod)
+pairs(dent_past_BAYmod)
+
+i <- emmeans(dent_past_BAYmod, specs = pairwise ~ Treatment, type = "response")
+
+# plot of predicted values of prevalence by diluter treatments vs controls
+me6 <- ggpredict(dent_past_mod4, c("Treatment"))
+past_predict_treatment <- plot(me6, add.data = F) + 
+  labs(x = "Treatment", y = bquote(italic("Pasteuria ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
+past_predict_treatment
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Past_Diluter-v-Control.tiff"), plot = past_predict_treatment, dpi = 600, width = 3, height = 4, units = "in", compression="lzw")
 
 
 
-### attempt to analyze the data in a different way...ALL THE SAME OUTCOME
-data2 <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionDentiferaInfectionPrevalence_Combined.csv"), stringsAsFactors = F, header = T)
-head(data2)
-pdata <- filter(data2, Parasite == "Pasteuria")
-
-model <- glm(Prevalence ~ PulicariaLine,family = "binomial", weights = N, data = pdata)
-summary(model)
-Anova(model)
-f <- emmeans(model, specs = pairwise ~ PulicariaLine, type = "response")
-
-# see if there is a better way to convert the original infection data into expanded binomial rather than doing it by hand
-data3 <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionDentiferaInfectionPrevalence_Expanded.csv"), stringsAsFactors = F, header = T)
-head(data3)
-pdata3 <- filter(data3, Parasite == "Pasteuria")
-
-model2 <- glm(Infected ~ PulicariaLine,family = "binomial", data = pdata3)  # this model should have random effects
-summary(model2)
-Anova(model2)
-g <- emmeans(model2, specs = pairwise ~ PulicariaLine, type = "response")
+# change the priors
+new_priors <- c(
+  set_prior(class = 'b', coef = 'age', prior = 'normal(0,10)'),
+  set_prior(class = 'b', coef = 'gendermale', prior = 'normal(0,10)'), # need to think about this as the difference in average weights of men and women that have the same other characteristics (age and height)
+  set_prior(class = 'b', coef = 'height', prior = 'normal(0,10)'),
+  set_prior(class = 'Intercept', prior = 'normal(0,100)'),
+  set_prior(class = 'sigma', prior = 'student_t(1,0,25)')
+)
 
 
-model3 <- logistf(Infected ~ PulicariaLine, data = data)
-summary(model3)
-Anova(model3)
 
-model4 <- flac(Infected ~ PulicariaLine, data = data)
-summary(model4)
-model4$linear.predictors
 
-me_4 <- ggpredict(model4, "PulicariaLine")
-plot(me4)
-class(model4)
+
 
 
 
