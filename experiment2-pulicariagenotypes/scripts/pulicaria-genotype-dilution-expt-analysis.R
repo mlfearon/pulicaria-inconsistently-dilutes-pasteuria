@@ -667,7 +667,7 @@ model1 <- glmer(Infection ~ Treatment + (1|PulicariaLine2/Rep),family = "binomia
 summary(model1)
 Anova(model1)
 overdisp_fun(model1)
-h <- emmeans(model1, specs = pairwise ~ PulicariaLine2, type = "response")
+h <- emmeans(model1, specs = pairwise ~ Treatment, type = "response")
 
 model2 <- glmer(Infection ~ PulicariaLine2 + (1|PulicariaLine2:Rep),family = "binomial", data = dentifera_past_binary_diluters)  # this model should have random effects
 summary(model2)
@@ -695,27 +695,42 @@ pairs(dent_past_BAYmod)
 
 i <- emmeans(dent_past_BAYmod, specs = pairwise ~ Treatment, type = "response")
 
+
+# update the priors (weakly informative)
+new_priors <- c(
+  set_prior(class = 'b', coef = 'Treatmentdiluter', prior = 'normal(0,1)'),
+  set_prior(class = 'Intercept', prior = 'normal(0,4)'),
+  set_prior(class = 'sd', prior = 'student_t(3, 0, 2.5)')
+)
+
+
+dent_past_BAYmod2 <- brm(Infection ~ Treatment + (1|PulicariaLine2/Rep), 
+                        family = bernoulli(), 
+                        prior = new_priors,
+                        data = dentifera_past_binary, 
+                        control = list(adapt_delta = 0.98))
+summary(dent_past_BAYmod2)
+prior_summary(dent_past_BAYmod2)
+plot(dent_past_BAYmod2)
+mcmc_plot(dent_past_BAYmod2)
+
+waic_1 <- waic(dent_past_BAYmod)
+waic_2 <- waic(dent_past_BAYmod2)
+loo_compare(waic_1, waic_2)
+
+loo_1 <- loo(dent_past_BAYmod, moment_match = TRUE)
+loo_2 <- loo(dent_past_BAYmod2)
+loo_compare(loo_1, loo_2)
+
+
 # plot of predicted values of prevalence by diluter treatments vs controls
-me6 <- ggpredict(dent_past_mod4, c("Treatment"))
-past_predict_treatment <- plot(me6, add.data = F) + 
+me_bayes1 <- ggpredict(dent_past_BAYmod, c("Treatment"))
+past_predict_treatment <- plot(me_bayes1, add.data = F) + 
   labs(x = "Treatment", y = bquote(italic("Pasteuria ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) +
   theme_classic() +
   theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 past_predict_treatment
 ggsave(here("experiment2-pulicariagenotypes", "figures", "Past_Diluter-v-Control.tiff"), plot = past_predict_treatment, dpi = 600, width = 3, height = 4, units = "in", compression="lzw")
-
-
-
-# change the priors
-new_priors <- c(
-  set_prior(class = 'b', coef = 'age', prior = 'normal(0,10)'),
-  set_prior(class = 'b', coef = 'gendermale', prior = 'normal(0,10)'), # need to think about this as the difference in average weights of men and women that have the same other characteristics (age and height)
-  set_prior(class = 'b', coef = 'height', prior = 'normal(0,10)'),
-  set_prior(class = 'Intercept', prior = 'normal(0,100)'),
-  set_prior(class = 'sigma', prior = 'student_t(1,0,25)')
-)
-
-
 
 
 
