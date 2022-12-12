@@ -300,18 +300,18 @@ AIC(dent_metsch_mod3, dent_metsch_mod3a)
 
 # calculates the pairwise tests for each genus within each site 
 #(determines if there are sig differences in Pasteuria prev between each pulicaria genotype)
-b<- emmeans(dent_metsch_mod2a, specs = pairwise ~ PulicariaLine2, type = "response")
-b
+c <- emmeans(dent_metsch_mod3a, specs = pairwise ~ PulicariaLine2, type = "response")
+c
 
 
 # plot of predicted values of prevalence by diluter genotype
-me2a <- ggpredict(dent_metsch_mod2a, c("PulicariaLine2"), type = "zi.prob")
-me2a$x <- factor(me2a$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
-View(me2a)
+me3a <- ggpredict(dent_metsch_mod3a, c("PulicariaLine2"), type = "zi.prob")
+me3a$x <- factor(me3a$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
+View(me3a)
 
 pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
 
-metsch_predict_a <- plot(me2a, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
+metsch_predict_a <- plot(me3a, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
   labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
   geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
@@ -326,23 +326,23 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenoty
 
 
 # try the model above with a logistic regression
-dent_metsch_mod2b <- logistf(Prevalence ~ PulicariaLine2, weights = N, data = dentifera_metsch)
-summary(dent_metsch_mod2b)
-anova(dent_metsch_mod2b)
+dent_metsch_mod3b <- logistf(Prevalence ~ PulicariaLine2, weights = N, data = dentifera_metsch)
+summary(dent_metsch_mod3b)
+anova(dent_metsch_mod3b)
 
-predict(dent_metsch_mod2b, type = "response")
-coef(dent_metsch_mod2b, type = "response")
-exp(confint(dent_metsch_mod2b, type = "response"))
-dent_metsch_mod2b$ci.lower
-dent_metsch_mod2b$ci.upper
+predict(dent_metsch_mod3b, type = "response")
+coef(dent_metsch_mod3b, type = "response")
+exp(confint(dent_metsch_mod3b, type = "response"))
+dent_metsch_mod3b$ci.lower
+dent_metsch_mod3b$ci.upper
 
-me2b <- ggpredict(dent_metsch_mod2b, c("PulicariaLine2"))
-me2b$x <- factor(me2b$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
+me3b <- ggpredict(dent_metsch_mod3b, c("PulicariaLine2"))
+me3b$x <- factor(me3b$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
 
 
 pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
 
-metsch_predict_b <- plot(me2b, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
+metsch_predict_b <- plot(me3b, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
   labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
   geom_vline(xintercept = 6.5, color = "black", linewidth = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
@@ -357,19 +357,19 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenoty
 
 # try the model above with a rare events logistic regression
 library(Zelig)
-dent_metsch_mod2c <- relogit(Prevalence ~ PulicariaLine2, weights = N, data = dentifera_metsch)
-summary(dent_metsch_mod2c)
-anova(dent_metsch_mod2c)
+dent_metsch_mod3c <- relogit(Prevalence ~ PulicariaLine2, weights = N, data = dentifera_metsch)
+summary(dent_metsch_mod3c)
+anova(dent_metsch_mod3c)
 
 
 
-me2c <- ggpredict(dent_metsch_mod2c, c("PulicariaLine2"))
-me2c$x <- factor(me2c$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
+me3c <- ggpredict(dent_metsch_mod3c, c("PulicariaLine2"))
+me3c$x <- factor(me3c$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
 
 
 pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
 
-metsch_predict_c <- plot(me2c, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
+metsch_predict_c <- plot(me3c, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
   labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
   geom_vline(xintercept = 6.5, color = "black", linewidth = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
@@ -381,32 +381,32 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenoty
 
 library(logistf)
 # try the model above with a logistic regression with added covariate (to help model predictions!)
-dent_metsch_mod2d <- flac(lfobject = dent_metsch_mod2b, data = dentifera_metsch)
-summary(dent_metsch_mod2d)
+dent_metsch_mod3d <- flac(lfobject = dent_metsch_mod2b, data = dentifera_metsch)
+summary(dent_metsch_mod3d)
 
-predict(dent_metsch_mod2d, type = "response")
+predict(dent_metsch_mod3d, type = "response")
 
 
 # try the model above with a logistic regression with adjusted intercept (to help model predictions!)
-dent_metsch_mod2e <- flic(lfobject = dent_metsch_mod2b)
-dent_metsch_mod2e <- logistf(Prevalence ~ PulicariaLine2, weights = N, flic = T, data = dentifera_metsch)
-summary(dent_metsch_mod2e)
+dent_metsch_mod3e <- flic(lfobject = dent_metsch_mod2b)
+dent_metsch_mod3e <- logistf(Prevalence ~ PulicariaLine2, weights = N, flic = T, data = dentifera_metsch)
+summary(dent_metsch_mod3e)
 
 
-predict(dent_metsch_mod2e, type = "response")
-coef(dent_metsch_mod2e, type = "response")
-exp(confint(dent_metsch_mod2e, type = "response"))
-dent_metsch_mod2e$ci.lower
-dent_metsch_mod2e$ci.upper
-get_sigma(dent_metsch_mod2e)
+predict(dent_metsch_mod3e, type = "response")
+coef(dent_metsch_mod3e, type = "response")
+exp(confint(dent_metsch_mod3e, type = "response"))
+dent_metsch_mod3e$ci.lower
+dent_metsch_mod3e$ci.upper
+get_sigma(dent_metsch_mod3e)
 
-me2e <- ggpredict(dent_metsch_mod2e, c("PulicariaLine2"))
-me2e$x <- factor(me2e$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
+me3e <- ggpredict(dent_metsch_mod3e, c("PulicariaLine2"))
+me3e$x <- factor(me3e$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
 
 
 pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
 
-metsch_predict_e <- plot(me2e, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
+metsch_predict_e <- plot(me3e, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
   labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
   geom_vline(xintercept = 6.5, color = "black", linewidth = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
@@ -423,46 +423,20 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenoty
 
 
 #  comparison of pulicaria bodysize against Metsch prevalence in dentifera
-dent_metsch_mod3 <- glm(Prevalence ~ BodySize_mm_mean, family = "binomial", weights = N, data = dentifera_metsch)
-summary(dent_metsch_mod3)
-Anova(dent_metsch_mod3, test.statistic = "Wald")
-plot(dent_metsch_mod3)
+dent_metsch_mod4 <- glm(Prevalence ~ BodySize_mm_mean, family = "binomial", weights = N, data = dentifera_metsch_lines2)
+summary(dent_metsch_mod4)
+Anova(dent_metsch_mod4, test.statistic = "Wald")
+overdisp_fun(dent_metsch_mod4)
 
 
 # plot of predicted values of prevalence by pulicaria bodysize
-me3 <- ggpredict(dent_metsch_mod3, c("BodySize_mm_mean [all]"))
-plot(me3, add.data = F) + 
+me4 <- ggpredict(dent_metsch_mod4, c("BodySize_mm_mean [all]"))
+plot(me4, add.data = F) + 
   labs(x = "Body Size (mm)", y = "Fungal Prevalence (%)", title = NULL)
 
 ## No significant effect of body size
 
 
-# Comparison of diluter vs control treatments for pasteuria
-#  comparison of pulicaria genotype and controls only
-dent_metsch_mod4 <- glm(Prevalence ~ Treatment, family = "binomial", weights = N, data = dentifera_metsch)
-summary(dent_metsch_mod4)
-Anova(dent_metsch_mod4, test.statistic = "Wald")
-plot(dent_metsch_mod4)
-
-
-
-# plot of predicted values of prevalence by diluter treatments vs controls
-me4 <- ggpredict(dent_metsch_mod4, c("Treatment"))
-metsch_predict_treatment <- plot(me4, add.data = F) + 
-  labs(x = "Treatment", y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) +
-  theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
-metsch_predict_treatment
-ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_Diluter-v-Control.tiff"), plot = metsch_predict_treatment, dpi = 600, width = 3, height = 4, units = "in", compression="lzw")
-
-
-
-
-
-## Try dentifera metsch infection prevalence vs pulicaria genotype model with Bayesian methods
-#  initial model, uniform priors
-dent_metsch_BAYmod <- brm(Prevalence ~ PulicariaLine2, family = bernoulli(), weights = N, data = dentifera_metsch)
-summary(dent_metsch_BAYmod)
 
 
 
