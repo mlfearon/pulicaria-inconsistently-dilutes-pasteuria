@@ -214,24 +214,27 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_Diluter-v-Contr
 
 
 
-#  comparison of pulicaria genotype and body size
-dent_metsch_mod <- glm(Prevalence ~ PulicariaLine2 * BodySize_mm, family = "binomial", weights = N, data = dentifera_metsch_lines)
-summary(dent_metsch_mod)
-vif(dent_metsch_mod)
-plot(dent_metsch_mod)
-Anova(dent_metsch_mod, test.statistic = "Wald")  # not significant interaction between genotype and bodysize on prevalence
-overdisp_fun(dent_metsch_mod)
+
+
+#  Next test for effects of pulicaria genotype and body size, and their interaction (removed the controls and the Pine genotype that did not have any infection)
+dent_metsch_mod2 <- glm(Prevalence ~ PulicariaLine2 * BodySize_mm, family = "binomial", weights = N, data = dentifera_metsch_lines2)
+summary(dent_metsch_mod2)
+vif(dent_metsch_mod2, type = "predictor")
+Anova(dent_metsch_mod2, test.statistic = "Wald")  # not significant interaction between genotype and bodysize on prevalence
+overdisp_fun(dent_metsch_mod2)
 
 # calculates the pairwise tests for each genus within each site 
 #(determines if there are sig differences in metsch prev between each pulicaria genotpye for a given body size = 1.89 mm)
-a <- emmeans(dent_metsch_mod, specs = pairwise ~ PulicariaLine2 | BodySize_mm, type = "response")
+a <- emmeans(dent_metsch_mod2, specs = pairwise ~ PulicariaLine2 | BodySize_mm, type = "response")
 a
 
 
 # plot of predicted values of prevalence by diluter density and diluter host species
-me <- ggpredict(dent_metsch_mod, c("PulicariaLine2", "BodySize_mm"))
+me <- ggpredict(dent_metsch_mod2, c("PulicariaLine2", "BodySize_mm"))
 plot(me, add.data = F)
 
+#There is no significant interaction between bodysize and pulicaria genotype. But genotype and bodysize are also quite correlated together
+# shown by the high VIFs for the model. Try testing genotype and bodysize effects on disease prevalence independently.
 
 # plot_predict <- ggplot(data = me, aes(x = x, y = predicted)) +
 #   geom_line(aes(color = x), size = 1) +
@@ -245,12 +248,11 @@ plot(me, add.data = F)
 
 
 
-#  comparison of pulicaria genotype and controls only
-dent_metsch_mod2 <- glm(Prevalence ~ PulicariaLine2, family = "binomial", weights = N, data = dentifera_metsch)
-summary(dent_metsch_mod2)
-Anova(dent_metsch_mod2, test.statistic = "Wald")
-#plot(dent_metsch_mod2)
-overdisp_fun(dent_metsch_mod2)
+# Test of effect of pulicaria genotype only on Metsch prevalence (Pine genotype removed from analysis)
+dent_metsch_mod3 <- glm(Prevalence ~ PulicariaLine2, family = "binomial", weights = N, data = dentifera_metsch_lines2)
+summary(dent_metsch_mod3)
+Anova(dent_metsch_mod3, test.statistic = "Wald")
+overdisp_fun(dent_metsch_mod3)
 
 predict(dent_metsch_mod2, type = "response")
 dent_metsch_mod2$fitted.values
@@ -258,37 +260,45 @@ dent_metsch_mod2$ci.upper
 
 # calculates the pairwise tests for each genus within each site 
 #(determines if there are sig differences in Pasteuria prev between each pulicaria genotype)
-b<- emmeans(dent_metsch_mod2, specs = pairwise ~ PulicariaLine2, type = "response")
+b<- emmeans(dent_metsch_mod3, specs = pairwise ~ PulicariaLine2, type = "response")
 b
 
 
+#extract predicted infection probabilities and confidence intervals
+metsch_prob <- as.data.frame(b$emmeans)
+metsch_prob2 <- rbind(metsch_prob, Pine)
+class(metsch_prob)
 # plot of predicted values of prevalence by diluter genotype
-me2 <- ggpredict(dent_metsch_mod2, c("PulicariaLine2"), type = "fixed")
-me2$x <- factor(me2$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
-
+me2 <- ggpredict(dent_metsch_mod3, c("PulicariaLine2"))
+Pine <- c("Pine", 0, NA, Inf, NA, NA)
+me2 <- rbind(me2,Pine)
+me2$x <- factor(me2$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W"))
+View(me2)
 
 pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
 pulic_colors2 <- c(rep("#d95f02", 6))
 
-metsch_predict <- plot(me2, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
+metsch_genotype_predict <- plot(me2, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors, limits = c(-0.05,1)) + 
   labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
-  geom_vline(xintercept = 6.5, color = "black", linewidth = 1.5) +
-  geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
+  #geom_vline(xintercept = 6.5, color = "black", linewidth = 1.5) +
+  #geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
   theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
-metsch_predict
-ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+metsch_genotype_predict
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype.tiff"), plot = metsch_genotype_predict, dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 
 
 # try with zero-inflated model
-dent_metsch_mod2a <- glmmTMB(Prevalence ~ PulicariaLine2, ziformula = ~PulicariaLine2, family = "binomial", weights = N, data = dentifera_metsch, na.action=na.omit)
-summary(dent_metsch_mod2a)
-Anova(dent_metsch_mod2a, test.statistic = "Chisq")
+dent_metsch_mod3a <- glmmTMB(Prevalence ~ PulicariaLine2, ziformula = ~PulicariaLine2, family = "binomial", weights = N, data = dentifera_metsch_lines2, na.action=na.omit)
+summary(dent_metsch_mod3a)
+Anova(dent_metsch_mod3a, test.statistic = "Chisq")
 #plot(dent_metsch_mod2)
 #overdisp_fun(dent_metsch_mod2a)
 
+# Zero-inflated model is 10 AIC higher than the mod3 above.
+AIC(dent_metsch_mod3, dent_metsch_mod3a)
 
 
 # calculates the pairwise tests for each genus within each site 
