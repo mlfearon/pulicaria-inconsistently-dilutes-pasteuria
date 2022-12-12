@@ -266,26 +266,23 @@ b
 
 #extract predicted infection probabilities and confidence intervals
 metsch_prob <- as.data.frame(b$emmeans)
-metsch_prob2 <- rbind(metsch_prob, Pine)
-class(metsch_prob)
+
 # plot of predicted values of prevalence by diluter genotype
 me2 <- ggpredict(dent_metsch_mod3, c("PulicariaLine2"))
-Pine <- c("Pine", 0, NA, Inf, NA, NA)
-me2 <- rbind(me2,Pine)
-me2$x <- factor(me2$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W"))
-View(me2)
 
-pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
-pulic_colors2 <- c(rep("#d95f02", 6))
 
-metsch_genotype_predict <- plot(me2, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors, limits = c(-0.05,1)) + 
+pulic_colors2 <- c("#d95f02")
+
+metsch_genotype_predict <- ggplot() +
+  geom_jitter(data = dentifera_metsch_lines, aes(x = PulicariaLine2, y = Prevalence), color = pulic_colors2, size = 2, width = 0.2, height = 0.01, alpha = 0.6) +
+  geom_pointrange(data = metsch_prob, aes(x = PulicariaLine2, y = prob, ymax = asymp.UCL, ymin = asymp.LCL), color = "black", linewidth = 1) +
+  scale_y_continuous(labels = scales::percent, limit = c(-0.05,1)) +
   labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
-  #geom_vline(xintercept = 6.5, color = "black", linewidth = 1.5) +
-  #geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
   theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 metsch_genotype_predict
-ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype.tiff"), plot = metsch_genotype_predict, dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype_update.tiff"), plot = metsch_genotype_predict, dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 
