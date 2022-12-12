@@ -170,6 +170,7 @@ str(dentifera_metsch_lines)
 dentifera_past <- dentifera_data2 %>%
   filter(Parasite == "Pasteuria")
 dentifera_past <- arrange(dentifera_past, group_by = Treatment, PulicariaLine)
+dentifera_past <- mutate(dentifera_past, Treatment2 = if_else(Treatment == "control", 1, 2))
 str(dentifera_past)
 dentifera_past$PulicariaLine <- factor(dentifera_past$PulicariaLine, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control1", "Control2"))
 dentifera_past$PulicariaLine2 <- factor(dentifera_past$PulicariaLine2, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
@@ -448,22 +449,51 @@ plot(me4, add.data = F) +
 
 ### Dentifera Pasteuria prevalence models
 
-
-#  comparison of pulicaria genotype and body size
-dent_past_mod <- glm(Prevalence ~ PulicariaLine2 * BodySize_mm, family = "binomial", weights = N, data = dentifera_past_lines)
-summary(dent_past_mod)  #something isn't quite right about this model, weird predictions
-vif(dent_past_mod)
+# first test comparing diluter treatments to controls
+# Comparison of diluter vs control treatments for pasteuria
+#  comparison of pulicaria genotype and controls only
+dent_past_mod <- glm(Prevalence ~ Treatment, family = "binomial", weights = N, data = dentifera_past)
+summary(dent_past_mod)
 Anova(dent_past_mod, test.statistic = "Wald")
-#plot(dent_past_mod)
+overdisp_fun(dent_past_mod)
+
+
+past_treatment <- emmeans(dent_past_mod, specs = pairwise ~ Treatment, type = "response")
+past_treatment
+
+
+
+# plot of predicted values of prevalence by diluter treatments vs controls
+me_past_treatment <- ggpredict(dent_past_mod, c("Treatment"))
+me_past_treatment$Treatment2 <- c("Control", "Diluter")
+past_predict_treatment <- plot(me_past_treatment) +
+  scale_x_continuous(labels = c("Control", "Diluter"), breaks = c(1, 2), limits = c(0.5,2.5)) +
+  geom_jitter(data = dentifera_past, aes(x = Treatment2, y = Prevalence, color = Treatment), size = 2, width = 0.2, height = 0.01, alpha = 0.6) +
+  scale_color_manual(values = pulic_colors1) +
+  labs(x = "Treatment", y = bquote(italic("Pasteuria ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"), legend.position = "none")
+past_predict_treatment
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Past_Diluter-v-Control.tiff"), plot = past_predict_treatment, dpi = 600, width = 3, height = 4, units = "in", compression="lzw")
+
+
+
+
+#  Next test for effects of pulicaria genotype and body size, and their interaction (removed the controls and the Pine genotype that did not have any infection)
+dent_past_mod2 <- glm(Prevalence ~ PulicariaLine2 * BodySize_mm, family = "binomial", weights = N, data = dentifera_past_lines2)
+summary(dent_past_mod2)  #something isn't quite right about this model, weird predictions
+vif(dent_past_mod2)
+Anova(dent_past_mod2, test.statistic = "Wald")
+overdisp_fun(dent_past_mod2)
 
 # calculates the pairwise tests for each genus within each site 
 #(determines if there are sig differences in Pasteuria prev between each pulicaria genotpye for a given body size = 1.89 mm)
-c <- emmeans(dent_past_mod, specs = pairwise ~ PulicariaLine2 | BodySize_mm, type = "response")
-c
+d <- emmeans(dent_past_mod2, specs = pairwise ~ PulicariaLine2 | BodySize_mm, type = "response")
+d
 
 
 # plot of predicted values of prevalence by diluter density and diluter host species
-me4 <- ggpredict(dent_past_mod, c("PulicariaLine2", "BodySize_mm"))
+me4 <- ggpredict(dent_past_mod2, c("PulicariaLine2", "BodySize_mm"))
 plot(me4, add.data = F)
 
 
@@ -480,22 +510,22 @@ plot(me4, add.data = F)
 
 
 #  comparison of pulicaria genotype and controls only
-dent_past_mod2 <- glm(Prevalence ~ PulicariaLine2, family = "binomial", weights = N, data = dentifera_past)
-summary(dent_past_mod2)
-Anova(dent_past_mod2, test.statistic = "Wald")
-overdisp_fun(dent_past_mod2)
-plot(dent_past_mod2)
+dent_past_mod3 <- glm(Prevalence ~ PulicariaLine2, family = "binomial", weights = N, data = dentifera_past_lines2)
+summary(dent_past_mod3)
+Anova(dent_past_mod3, test.statistic = "Wald")
+overdisp_fun(dent_past_mod3)
+
 
 
 
 # calculates the pairwise tests for each genus within each site 
 #(determines if there are sig differences in Pasteuria prev between each pulicaria genotype)
-d<- emmeans(dent_past_mod2, specs = pairwise ~ PulicariaLine2, type = "response")
-d
+e<- emmeans(dent_past_mod3, specs = pairwise ~ PulicariaLine2, type = "response")
+e
 
 
 # plot of predicted values of prevalence by diluter density and diluter host species
-me5 <- ggpredict(dent_past_mod2, c("PulicariaLine2"))
+me5 <- ggpredict(dent_past_mod3, c("PulicariaLine2"))
 View(me5)
 str(me5)
 me5$x <- factor(me5$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
@@ -642,23 +672,6 @@ Anova(dent_past_mod3, test.statistic = "Wald")
 
 
 
-# Comparison of diluter vs control treatments for pasteuria
-#  comparison of pulicaria genotype and controls only
-dent_past_mod4 <- glm(Prevalence ~ Treatment, family = "binomial", weights = N, data = dentifera_past)
-summary(dent_past_mod4)
-Anova(dent_past_mod4, test.statistic = "Wald")
-plot(dent_past_mod4)
-
-
-
-# plot of predicted values of prevalence by diluter treatments vs controls
-me6 <- ggpredict(dent_past_mod4, c("Treatment"))
-past_predict_treatment <- plot(me6, add.data = F) + 
-  labs(x = "Treatment", y = bquote(italic("Pasteuria ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) +
-  theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
-past_predict_treatment
-ggsave(here("experiment2-pulicariagenotypes", "figures", "Past_Diluter-v-Control.tiff"), plot = past_predict_treatment, dpi = 600, width = 3, height = 4, units = "in", compression="lzw")
 
 
 # comparison of prevalence in dentifera based on diluter genotype
