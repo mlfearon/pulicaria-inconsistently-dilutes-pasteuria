@@ -1,6 +1,15 @@
-## This code analyzes Michelle's 2021 Dilution Follow-up Experiment 
+## Experiment 2 Code for "Mixed evidence for a dilution effect in Daphnia communities infected by a bacterial parasite"
+
+
+# Submitted to: Oecologia
+
 
 # Code written by Michelle Fearon
+# Last updated: Dec 12, 2022
+
+## This code analyzes Michelle's 2021 Dilution Follow-up Experiment 
+## Testing whether different D. pulicaria genotypes have a different capacity
+## to dilute Metschnikowia and Pasteuria parasites
 
 
 # libraries
@@ -15,6 +24,7 @@ library(ggpubr)
 library(car)
 library(MuMIn)
 library(emmeans)
+library(olsrr)
 library(RColorBrewer)
 library(brms)
 library(here)
@@ -104,8 +114,12 @@ bodysizeplot
 # check if there are significant differences in bodysize among pulicaria genotypes
 size_mod <- lm(BodySize_um ~ PulicariaLine, data = pulic_bodysize)
 summary(size_mod)
-plot(size_mod) # residuals are fairly normally distributed
 Anova(size_mod)
+plot(size_mod) # residuals are fairly normally distributed
+ols_plot_resid_qq(size_mod)
+ols_test_normality(size_mod)  # Shapiro-Wilk test is not significant, indicates reasonably normal distribution
+ols_test_breusch_pagan(size_mod) # test of homogenicity of variance is not significant, variance is constant
+
 
 # check sig differences among each pair of genotypes
 size_dif <- emmeans(size_mod, specs = pairwise ~ PulicariaLine, type = "response")
@@ -140,6 +154,7 @@ View(pulicaria_data2)
 dentifera_metsch <- dentifera_data2 %>%
   filter(Parasite == "Metschnikowia")
 dentifera_metsch <- arrange(dentifera_metsch, group_by = Treatment, PulicariaLine)
+dentifera_metsch <- mutate(dentifera_metsch, Treatment2 = if_else(Treatment == "control", 1, 2))
 str(dentifera_metsch)
 dentifera_metsch$PulicariaLine <- factor(dentifera_metsch$PulicariaLine, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control1", "Control2"))
 dentifera_metsch$PulicariaLine2 <- factor(dentifera_metsch$PulicariaLine2, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
@@ -147,6 +162,7 @@ dentifera_metsch$PulicariaLine2 <- factor(dentifera_metsch$PulicariaLine2, level
 
 dentifera_metsch_lines <- filter(dentifera_metsch, PulicariaLine2 != "Control")
 dentifera_metsch_lines$PulicariaLine2 <- factor(dentifera_metsch_lines$PulicariaLine2, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W"))
+dentifera_metsch_lines2 <- filter(dentifera_metsch_lines, PulicariaLine2 != "Pine") # remove genotype (Pine) that did not get infected
 str(dentifera_metsch_lines)
 
 
@@ -161,7 +177,7 @@ dentifera_past$PulicariaLine2 <- factor(dentifera_past$PulicariaLine2, levels = 
 
 dentifera_past_lines <- filter(dentifera_past, PulicariaLine2 != "Control")
 dentifera_past_lines$PulicariaLine2 <- factor(dentifera_past_lines$PulicariaLine2, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W"))
-
+dentifera_past_lines2 <- filter(dentifera_past_lines, PulicariaLine2 != "Pine", PulicariaLine2 != "Clear5") # remove genotype (Pine and Clear5) that did not get infected
 
 
 
@@ -169,6 +185,33 @@ dentifera_past_lines$PulicariaLine2 <- factor(dentifera_past_lines$PulicariaLine
 
 
 ### Dentifera Metsch prevalence models
+
+# first test comparing diluter treatments to controls
+dent_metsch_mod <- glm(Prevalence ~ Treatment, family = "binomial", weights = N, data = dentifera_metsch)
+summary(dent_metsch_mod)
+Anova(dent_metsch_mod, test.statistic = "Wald")  # not significant interaction between genotype and bodysize on prevalence
+overdisp_fun(dent_metsch_mod)
+
+# pairwise comparison of control vs diluter treatments
+metsch_treatment <- emmeans(dent_metsch_mod, specs = pairwise ~ Treatment, type = "response")
+metsch_treatment
+
+
+# plot of predicted values of prevalence by diluter treatments vs controls
+me_metsch_treatment <- ggpredict(dent_metsch_mod, c("Treatment"))
+me_metsch_treatment$Treatment2 <- c("Control", "Diluter")
+pulic_colors1 <- c("#666666", "#d95f02")
+metsch_predict_treatment <- plot(me_metsch_treatment) + 
+  scale_x_continuous(labels = c("Control", "Diluter"), breaks = c(1, 2), limits = c(0.5,2.5)) +
+  geom_jitter(data = dentifera_metsch, aes(x = Treatment2, y = Prevalence, color = Treatment), size = 2, width = 0.2, height = 0.01, alpha = 0.6) +
+  scale_color_manual(values = pulic_colors1) +
+  labs(x = "Treatment", y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"), legend.position = "none")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_Diluter-v-Control.tiff"), plot = metsch_predict_treatment, dpi = 600, width = 3, height = 4, units = "in", compression="lzw")
+
+
+
 
 
 #  comparison of pulicaria genotype and body size
@@ -494,7 +537,7 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Pasteuria_PulicariaGen
 
 ## Figure 3
 # joint figure of pasteuria and metsch prevalence vs pulicaria genotype
-Figure <- ggarrange(past_predict, metsch_predict, labels = c("A", "B"),ncol = 1, nrow = 2)
+Figure <- ggarrange(past_predict, metsch_predict, labels = c("A", "B"), ncol = 1, nrow = 2)
 ggsave(here("experiment2-pulicariagenotypes", "figures", "Prevalence_PulicariaGenotype.tiff"), plot = Figure, dpi = 600, width = 4, height = 6, units = "in", compression="lzw")
 
 
