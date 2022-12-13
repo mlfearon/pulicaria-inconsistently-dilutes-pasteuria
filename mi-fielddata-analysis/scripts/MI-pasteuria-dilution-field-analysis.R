@@ -1,11 +1,24 @@
-# Analysis of field Pasteuria data and dilution effect
-
-setwd("C:/Users/mlfea/OneDrive/Documents/Projects/MHMP Daphnia Duffy/Generality of dilution (MHMP)/Pulicaria dilution paper/MI pasteuria field analysis")
-getwd()
-
-rm(list=ls())
+# Analysis of field Pasteuria data and dilution effect for "Mixed evidence for a dilution effect in Daphnia communities infected by a bacterial parasite"
 
 
+# Submitted to: Oecologia
+
+
+# Code written by Michelle Fearon
+# Last updated: Dec 13, 2022
+
+## This code produces four models to test how host density, species richness, and year correlate with
+## either maximal Pasteuria prevalence (models A & B) or area under the prevalence curve (models C & D), 
+## with two models for each response variable. Models A & C included the host densities and species richness 
+## from the date of max prevalence, while models B & D included the mean host densities and total species richness 
+## for each lake and year combination. We then used model selection to determine the best version of each model A-D.
+
+
+# set the path to the script relative to the project root directory
+here::i_am("mi-fielddata-analysis/scripts/MI-pasteuria-dilution-field-analysis.R")
+
+
+#libraries
 library(ggplot2)
 library(dplyr)
 library(vegan)
@@ -71,7 +84,7 @@ overdisp_fun <- function(model) {
 #==========================================================================================================
 
 # load cleaned parasite and host density data 2014 - 2017
-data <- read.csv("Clean-Data-2014-2020_All-Host-Densities.csv", stringsAsFactors = F)
+data <- read.csv(here("mi-fielddata-analysis/data/Clean-Data-2014-2021_All-Host-Densities.csv"), stringsAsFactors = F)
 # Total = total number of daphnia hosts for that species/site/date
 # .inf = the total number of infections for each parasite as a column
 # .prev = the calculated prevalence of each parasite (only when the total host density for that species/site/date > 20)
@@ -80,7 +93,7 @@ data <- read.csv("Clean-Data-2014-2020_All-Host-Densities.csv", stringsAsFactors
 # total.density = summed density of all host species for that site/date
 
 
-data <- filter(data, Year != 2018 & Year != 2020)
+data <- filter(data, Year != 2018 & Year != 2020 & Year != 2021)
 
 # add pasteuria infected density to data set
 data$past.density.inf <- data$pasteuria.prev * data$Host.Density
@@ -94,8 +107,8 @@ data$OtherHost.density <- data$Pulicaria.density + data$Retrocurva.density + dat
   data$Parvula.density + data$Ambigua.density + data$Mendotae.density
 
 # diversity metrics per sampling date
-data$species.richness <- rowSums(data[ , 26:33] > 0)
-data$shannon <- diversity(data[ , 26:33], "shannon")
+data$species.richness <- rowSums(data[ , 35:42] > 0)
+data$shannon <- diversity(data[ , 35:42], "shannon")
 
 
 # make Julian Day a factorial variable to use in bar plot
@@ -190,7 +203,7 @@ unique(sum.data$Lake)
 ##########################
 
 # load data with area under the curve calculated
-auc_data <- read.csv("auc_14to20_prev.csv", stringsAsFactors = F)
+auc_data <- read.csv(here("mi-fielddata-analysis/data/auc_14to21_prev.csv"), stringsAsFactors = F)
 auc_data$Year <- as.character(auc_data$Year)
 
 
@@ -253,8 +266,8 @@ cor.test(sum.data_dentifera$species.richness, sum.data_dentifera$mean.pulicaria.
 
 
 
-
-### Model of MAX Pasteuria prev in dentifera, with densities at max prev * Year 
+## MODEL A
+###  Initial Model of MAX Pasteuria prev in dentifera, with densities at max prev * Year 
 mod <- glmer(past.max.prev ~ pulicaria.at.max_z + dentifera.at.max_z + retrocurva.at.max_z + richness.at.max_z +
                Year + pulicaria.at.max_z:Year + dentifera.at.max_z:Year + retrocurva.at.max_z:Year + (1|Lake)+ (1|OLRE), 
              family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
@@ -278,7 +291,7 @@ fmList <- get.models(msc, delta < 2)
 summary(model.avg(fmList))
 
 
-# top model
+# top model A
 moda <- glmer(past.max.prev ~ pulicaria.at.max_z + (1|Lake) + (1|OLRE), 
              family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
 summary(moda)
