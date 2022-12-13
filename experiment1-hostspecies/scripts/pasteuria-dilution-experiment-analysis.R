@@ -19,7 +19,6 @@ library(lme4)
 library(ggeffects)
 library(ggplot2)
 library(car)
-library(MuMIn)
 library(emmeans)
 library(RColorBrewer)
 
@@ -100,7 +99,7 @@ plot_predict2 <- plot_predict +
   scale_color_brewer(palette = "Dark2", name = "Diluter Species", labels = c(bquote(italic("D. dentifera")), bquote(italic("D. pulicaria")), bquote(italic("D. retrocurva")))) +
   scale_shape(name = "Diluter Species", labels = c(bquote(italic("D. dentifera")), bquote(italic("D. pulicaria")), bquote(italic("D. retrocurva")))) +
   theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 10, color = "black"), axis.title.y = element_text(size = 9, color = "black"), 
-        legend.position = "top", legend.title = element_text(size = 8, color = "black"), legend.text = element_text(size = 6, color = "black"), legend.justification = "left", legend.margin = margin(0,0,0,-10), legend.box.margin = margin(0,0,0,-10))
+        legend.position = "top", legend.title = element_text(size = 8, color = "black"), legend.text = element_text(size = 7, color = "black"), legend.justification = "left", legend.margin = margin(0,0,0,-10), legend.box.margin = margin(0,0,0,-20))
 print(plot_predict2)
 ggsave(here("experiment1-hostspecies", "figures", "Figure1.tiff"), plot = plot_predict2, dpi = 300, width = 3.5, height = 4, units = "in", compression="lzw")
 
@@ -108,11 +107,11 @@ ggsave(here("experiment1-hostspecies", "figures", "Figure1.tiff"), plot = plot_p
 
 # calculates the pairwise tests for each genus within each site 
 #(determines if there are sig differences in Pasteuria prev between each host spp for a given host density = 4)
-a <- emmeans(mod, specs = pairwise ~ Diluter.Species | Diluter.Density, type = "response")
+a <- emmeans(mod2, specs = pairwise ~ Diluter.Species | Diluter.Density, type = "response")
 a
 
 # estimates of the slopes of each diluter species based on changes in density
-ab <- emtrends(mod, pairwise ~ Diluter.Species, var="Diluter.Density", type = "response")
+ab <- emtrends(mod2, pairwise ~ Diluter.Species, var="Diluter.Density", type = "response")
 ab
 
 
