@@ -5,7 +5,7 @@
 
 
 # Code written by Michelle Fearon
-# Last updated: Dec 12, 2022
+# Last updated: Dec 13, 2022
 
 ## This code analyzes Michelle's 2021 Dilution Follow-up Experiment 
 ## Testing whether different D. pulicaria genotypes have a different capacity
