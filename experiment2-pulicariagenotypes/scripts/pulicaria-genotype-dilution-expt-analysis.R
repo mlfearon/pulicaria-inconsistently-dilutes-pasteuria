@@ -90,6 +90,17 @@ head(dentifera_data)
 pulicaria_data <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionPulicariaInfectionPrevalence.csv"), stringsAsFactors = F, header = T)
 head(pulicaria_data)
 
+# check for any infections in the diluter pulicaria
+metsch_prev_pulic <- pulicaria_data %>%
+  filter(Parasite == "Metschnikowia") %>%
+  summarize(Total.Metsch.Prev = sum(Total_Infected)/sum(Total_N))
+metsch_prev_pulic
+
+past_prev_pulic <- pulicaria_data %>%
+  filter(Parasite == "Pasteuria") %>%
+  summarize(Total.Past.Prev = sum(Total_Infected)/sum(Total_N))
+past_prev_pulic
+
 
 ## Body Size data 
 pulic_bodysize <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionPulicariaBodySize.csv"), stringsAsFactors = F, header = T)
