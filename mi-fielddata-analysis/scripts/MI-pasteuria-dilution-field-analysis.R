@@ -8,7 +8,7 @@
 # Last updated: Dec 13, 2022
 
 ## This code produces four models to test how host density, species richness, and year correlate with
-## either maximal Pasteuria prevalence (models A & B) or area under the prevalence curve (models C & D), 
+## either maximal Pasteuria prevalence (models A & B) or area under the prevalence curve (models C & D) in D. dentifera, 
 ## with two models for each response variable. Models A & C included the host densities and species richness 
 ## from the date of max prevalence, while models B & D included the mean host densities and total species richness 
 ## for each lake and year combination. We then used model selection to determine the best version of each model A-D.
@@ -93,38 +93,28 @@ data <- read.csv(here("mi-fielddata-analysis/data/Clean-Data-2014-2021_All-Host-
 # total.density = summed density of all host species for that site/date
 
 
-data <- filter(data, Year != 2018 & Year != 2020 & Year != 2021)
+data <- data %>% 
+  filter(Year != 2018 & Year != 2020 & Year != 2021) %>% 
+  filter(Host.Species == "dentifera") %>% # get infection prevalence data for dentifera only
+  filter(!is.na(Host.Density)) %>%  # remove sample dates with missing density data
+  mutate(past.density.inf = pasteuria.prev * Host.Density, # add pasteuria infected density to data set
+         Diluter.density = Pulicaria.density + Retrocurva.density, # diluter host densities
+         OtherHost.density = Pulicaria.density + Retrocurva.density + Ceriodaphnia.density + Dubia.density +
+           Parvula.density + Ambigua.density + Mendotae.density) %>%
+  select(Host.Species, Lake, Year, Julian.Day, Julian, Total, starts_with("past"), Host.Density:OtherHost.density) # Select only the variables needed in cleaned data set
 
-# add pasteuria infected density to data set
-data$past.density.inf <- data$pasteuria.prev * data$Host.Density
-hist(data$past.density.inf)
-
-
-# diluter host densities
-data$Diluter.density <- data$Pulicaria.density + data$Retrocurva.density
-
-data$OtherHost.density <- data$Pulicaria.density + data$Retrocurva.density + data$Ceriodaphnia.density + data$Dubia.density + 
-  data$Parvula.density + data$Ambigua.density + data$Mendotae.density
 
 # diversity metrics per sampling date
-data$species.richness <- rowSums(data[ , 35:42] > 0)
-data$shannon <- diversity(data[ , 35:42], "shannon")
+data$species.richness <- rowSums(select(data, Dentifera.density:Mendotae.density) > 0)
+data$shannon <- diversity(select(data, Dentifera.density:Mendotae.density), "shannon")
 
-
-# make Julian Day a factorial variable to use in bar plot
+# check data set
 str(data)
-data$Julian.Day_factor <- as.factor(data$Julian.Day)
-data$Julian_factor <- as.factor(data$Julian)
-
 head(data)
 dim(data)
-
-
 View(data)
 
-# remove sample dates with missing density data
-data <- filter(data, !is.na(data$species.richness))
-
+range(data$Julian)
 
 
 
@@ -133,32 +123,17 @@ data <- filter(data, !is.na(data$species.richness))
 ######################################################################
 
 
-head(data)
-
-# Select only the variables needed in cleaned data set
-sub.data <- data %>%
-  select(Host.Species, Lake, Year, Julian.Day, Julian, Total, starts_with("past"), Host.Density:shannon)
-dim(sub.data)
-
 # calculate the max, mean, sd, and se of pasteuria prevalence for each host, lake and year
-sum.data_1 <- sub.data %>%
+sum.data <- data %>%
   group_by(Host.Species, Lake, Year) %>%  # group by host species, lake and year
-  select(Host.Species, Lake, Year, Julian.Day, Julian, Total, starts_with("past")) %>%
+  filter(Julian < 305) %>% # remove November dates, only include July - October for max prev and mean densities
   summarize(past.max.prev = max(pasteuria.prev),  # calculate max pasteuria infection prevalence
             past.mean.prev = mean(pasteuria.prev),# calculate mean pasteuria infection prevalence
             past.sd.prev = sd(pasteuria.prev),    # calculate sd pasteuria infection prevalence
             past.se.prev = sd(pasteuria.prev)/sqrt(length(pasteuria.prev)),  # calculate standard error pasteuria infection prevalence
-            past.max.inf = max(past.density.inf, na.rm = T),  # maximum pf pasteuria infection density
-            mean.total.count = mean(Total, na.rm = T)) %>%  # mean of the total dentifera hosts counted
-  ungroup()
-
-
-
-sum.data_2 <- sub.data %>%
-  group_by(Host.Species, Lake, Year) %>%  # group by host species, lake and year
-  select(Host.Species, Lake, Year, Julian.Day, Julian, Host.Density:shannon) %>%
-  filter(Julian < 305) %>% # remove November dates, only include July - October for mean densities
-  summarize(mean.density = mean(Host.Density, na.rm = T),    # mean host density of each species
+            past.max.inf = max(past.density.inf),  # maximum pf pasteuria infection density
+            mean.total.count = mean(Total, na.rm = T),   # mean of the total dentifera hosts counted
+            mean.density = mean(Host.Density, na.rm = T),    # mean host density of each species
             mean.tot.density = mean(Total.Density, na.rm = T),# mean total density of all hosts
             mean.dentifera.density = mean(Dentifera.density, na.rm = T),# mean dentifera density
             mean.pulicaria.density = mean(Pulicaria.density, na.rm = T),# mean pulicaria density
@@ -168,19 +143,11 @@ sum.data_2 <- sub.data %>%
             mean.parvula.density = mean(Parvula.density, na.rm = T), # mean parvula density
             mean.ambigua.density = mean(Ambigua.density, na.rm = T), # mean Ambigua density
             mean.mendotae.density = mean(Mendotae.density, na.rm = T), # mean Mendotae density
-            mean.diluter.density = mean(Diluter.density, na.rm = T),
-            mean.other.density = mean(OtherHost.density, na.rm = T),
-            mean.richness = mean(species.richness, na.rm = T),
-            mean.shannon = mean(shannon, na.rm = T)) %>%
-  mutate(dentifera.present = if_else(mean.dentifera.density > 0, "present", "absent"),
-         pulicaria.present = if_else(mean.pulicaria.density > 0, "present", "absent"),
-         retrocurva.present = if_else(mean.retrocurva.density > 0, "present", "absent")) %>%
+            mean.diluter.density = mean(Diluter.density, na.rm = T),  # mean of diluter hosts (pulicaria + retrocurva)
+            mean.other.density = mean(OtherHost.density, na.rm = T), # mean of all other hotsts (non-dentifera)
+            mean.richness = mean(species.richness, na.rm = T),       # mean species richness
+            mean.shannon = mean(shannon, na.rm = T)) %>%             # mean shannon diversity index
   ungroup()
-  
-
-
-sum.data <- left_join(sum.data_1, sum.data_2, by = c("Host.Species", "Lake", "Year"))
-
 
 View(sum.data)
 dim(sum.data)
@@ -189,11 +156,10 @@ dim(sum.data)
 sum.data$Year <- as.character(sum.data$Year)
 sum.data$mean.total.count[ is.nan(sum.data$mean.total.count)] <- 0
 
-rich <- sum.data %>%
-  select(mean.dentifera.density:mean.mendotae.density)
+
 
 # add species richness and simpson diversity index to data set
-sum.data$species.richness <- rowSums(sum.data[ , 12:19] > 0)
+sum.data$species.richness <- rowSums(select(sum.data, mean.dentifera.density:mean.mendotae.density) > 0)
 
 
 unique(sum.data$Lake)
