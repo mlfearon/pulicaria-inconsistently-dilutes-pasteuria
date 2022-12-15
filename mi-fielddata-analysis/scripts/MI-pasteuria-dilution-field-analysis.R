@@ -37,6 +37,7 @@ library(ggiraph)
 library(ggiraphExtra)
 library(moonBook)
 library(RColorBrewer)
+library(here)
 
 # function to make a grid plot with a shared legend
 grid_arrange_shared_legend <- function(..., ncol = length(list(...)), nrow = 1, position = c("bottom", "right")) {
@@ -127,11 +128,11 @@ range(data$Julian)
 sum.data <- data %>%
   group_by(Host.Species, Lake, Year) %>%  # group by host species, lake and year
   filter(Julian < 305) %>% # remove November dates, only include July - October for max prev and mean densities
-  summarize(past.max.prev = max(pasteuria.prev),  # calculate max pasteuria infection prevalence
-            past.mean.prev = mean(pasteuria.prev),# calculate mean pasteuria infection prevalence
-            past.sd.prev = sd(pasteuria.prev),    # calculate sd pasteuria infection prevalence
-            past.se.prev = sd(pasteuria.prev)/sqrt(length(pasteuria.prev)),  # calculate standard error pasteuria infection prevalence
-            past.max.inf = max(past.density.inf),  # maximum pf pasteuria infection density
+  summarize(past.max.prev = max(pasteuria.prev, na.rm = T),  # calculate max pasteuria infection prevalence
+            past.mean.prev = mean(pasteuria.prev, na.rm = T),# calculate mean pasteuria infection prevalence
+            past.sd.prev = sd(pasteuria.prev, na.rm = T),    # calculate sd pasteuria infection prevalence
+            past.se.prev = sd(pasteuria.prev, na.rm = T)/sqrt(length(pasteuria.prev)),  # calculate standard error pasteuria infection prevalence
+            past.max.inf = max(past.density.inf, na.rm = T),  # maximum pf pasteuria infection density
             mean.total.count = mean(Total, na.rm = T),   # mean of the total dentifera hosts counted
             mean.density = mean(Host.Density, na.rm = T),    # mean host density of each species
             mean.tot.density = mean(Total.Density, na.rm = T),# mean total density of all hosts
@@ -148,7 +149,7 @@ sum.data <- data %>%
             mean.richness = mean(species.richness, na.rm = T),       # mean species richness
             mean.shannon = mean(shannon, na.rm = T)) %>%             # mean shannon diversity index
   ungroup()
-
+ # note that the error produced is for one lake year (2015 Whitemore) that does not have any records of pasteuria in dentifera that were greater than 20 individuals counted, therefore prevalence could not be calculated for those dates.
 View(sum.data)
 dim(sum.data)
 
@@ -168,18 +169,18 @@ unique(sum.data$Lake)
 # Area Under the Curve
 ##########################
 
-# load data with area under the curve calculated
+# load data with area under the curve calculated, and host densities on the date of the max prevalence
 auc_data <- read.csv(here("mi-fielddata-analysis/data/auc_14to21_prev.csv"), stringsAsFactors = F)
 auc_data$Year <- as.character(auc_data$Year)
 
 
-# select only Pasteuria data and prep to join with 
+# select only Pasteuria data and prep to join with the sum.data 
 auc_data_past <- auc_data %>%
-  filter(Parasite.Species == "pasteuria.prev") %>%
+  filter(Parasite.Species == "pasteuria.prev" & Host.Species == "dentifera"  & Year != 2020 & Year != 2021) %>%
   arrange(Host.Species, Lake) %>%
   dplyr::rename(pasteuria.auc = AUC.prev2) %>%
   select(Host.Species, Lake, Year, pasteuria.auc, Max.Prevalence, Count.At.Max:shannon.at.max)
-
+View(auc_data_past)
 
 str(auc_data_past)
 str(sum.data)
@@ -193,13 +194,12 @@ sum.data$Year <- as.character(sum.data$Year)
 sum.data$Host.Species <- as.factor(sum.data$Host.Species)
 
 
-#filter to get only pasteuria prevalence in dentifera
-sum.data_dentifera <- sum.data %>%
-  filter(Host.Species == "dentifera")
-View(sum.data_dentifera)
-str(sum.data_dentifera)
-sum.data_dentifera <- as.data.frame(sum.data_dentifera)
+# filter out the lake year that doesn't have a valid max prevalence because there was not enough dentifera detected to calculate prevalence
+sum.data <- filter(sum.data, !is.na(Max.Prevalence)) # removed Whitemore in 2015 row.
+sum.data_dentifera <- as.data.frame(sum.data)
 
+
+# Center and scale all continuous variables, densities get log + 1 transformation
 sum.data_dentifera$mean.tot.density_z <- as.numeric(scale(log(sum.data_dentifera$mean.tot.density)))
 sum.data_dentifera$mean.dentifera.density_z <- as.numeric(scale(log(sum.data_dentifera$mean.dentifera.density+1)))
 sum.data_dentifera$mean.pulicaria.density_z <- as.numeric(scale(log(sum.data_dentifera$mean.pulicaria.density+1)))
@@ -216,9 +216,6 @@ sum.data_dentifera$richness.at.max_z <- as.numeric(scale(sum.data_dentifera$rich
 sum.data_dentifera$shannon.at.max_z <- as.numeric(scale(sum.data_dentifera$shannon.at.max))
 
 
-
-hist(sum.data_dentifera$richness.at.max)
-sum(sum.data_dentifera$species.richness == 6)
 
 #include observation level random effect
 sum.data_dentifera$OLRE <- seq_len(nrow(sum.data_dentifera))
@@ -258,54 +255,55 @@ summary(model.avg(fmList))
 
 
 # top model A
-moda <- glmer(past.max.prev ~ pulicaria.at.max_z + (1|Lake) + (1|OLRE), 
+modA <- glmer(past.max.prev ~ pulicaria.at.max_z + (1|Lake) + (1|OLRE), 
              family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
-summary(moda)
-
+summary(modA)
+overdisp_fun(modA)
 
 # Marginal effects from top model
-me1a <- ggpredict(moda, c("pulicaria.at.max_z [all]"))
-plot(me1a, add.data = T)
+me1_a <- ggpredict(modA, c("pulicaria.at.max_z [all]"))
+plot(me1_a, add.data = T)
 
 
 # recalculate original Pulicaria density at Max 
-me1a$x 
+me1_a$x 
 pulic_mean <- mean(log(sum.data_dentifera$pulicaria.at.max+1)) # mean of original richness from disease data set
 pulic_sd <- sd(log(sum.data_dentifera$pulicaria.at.max+1)) # sd of original richness from disease data set
-me1a$PulicMax_log <- t((t(me1a$x) * pulic_sd) + pulic_mean)
-me1a$PulicMax <- exp(me1a$PulicMax_log)
+me1_a$PulicMax_log <- t((t(me1_a$x) * pulic_sd) + pulic_mean)
+me1_a$PulicMax <- exp(me1_a$PulicMax_log)
 
 display.brewer.pal(3, "Dark2")
 brewer.pal(3, "Dark2")
 
+# Figure 2A: Model A
 # plot of Max Pasteuria prevalence vs pulicaria density at max prevalence
-MaxPrev_Pulic <- ggplot(me1a, aes(x = PulicMax, y = predicted)) +
+MaxPrev_Pulic <- ggplot(me1_a, aes(x = PulicMax, y = predicted)) +
   labs(tag = "A") +
   geom_line(size = 1,  color = "#D95F02") +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, outline.type = NULL, fill = "#D95F02") +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, fill = "#D95F02") +
   geom_jitter(data = sum.data_dentifera, aes(x = pulicaria.at.max+1, y = past.max.prev), size = 2, alpha = 0.4, width = 0.05, color = "#D95F02", shape = 17) +
-  labs(x = bquote(italic("D. pulicaria") ~ "Density at Max Prevalence (no./" ~ "M"^2 ~")"), y = bquote(atop( "","Maximal " ~ italic("Pasteuria") ~ "Prevalence (%)"))) +
-  #ylim(0,1) +
-  geom_text(aes(x = 50, y= 0.1), label = "p = 0.06") +
+  labs(x = bquote(italic("D. pulicaria") ~ "Density at Max Prevalence (no./" ~ "M"^2*")"), y = bquote(atop( "","Maximal " ~ italic("Pasteuria") ~ "Prevalence"))) +
+  scale_y_continuous(labels = scales::percent) +
+  geom_text(aes(x = 50, y= 0.1), label = "p = 0.097") +
   scale_x_log10(labels = scales::comma) +
   theme_classic()+
   theme(axis.text = element_text(size = 10, color = "black"), axis.title = element_text(size = 11, color = "black"))
 print(MaxPrev_Pulic)
-ggsave("MaxPastPrev_PulicariaAtMax_predict_color.png", plot = MaxPrev_Pulic, dpi = 300, width = 10, height = 10, units = "cm")
+ggsave(here("mi-fielddata-analysis/figures/MaxPastPrev_PulicariaAtMax_predict_color.png"), plot = MaxPrev_Pulic, dpi = 300, width = 10, height = 10, units = "cm")
 
 
-
+# second top model is the NULL model
 
 
 # third top model
-modb <- glmer(past.max.prev ~ pulicaria.at.max_z + retrocurva.at.max_z + (1|Lake) + (1|OLRE), 
+modA_3 <- glmer(past.max.prev ~ dentifera.at.max_z + (1|Lake) + (1|OLRE), 
               family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
-summary(modb)
+summary(modA_3)
 
 
 
 
-
+## MODEL B
 ### Model of MAX Pasteuria prev in dentifera, with mean densities * Year 
 mod2 <- glmer(past.max.prev ~ mean.pulicaria.density_z + mean.dentifera.density_z + mean.retrocurva.density_z + species.richness_z + Year +
                mean.pulicaria.density_z:Year + mean.retrocurva.density_z:Year + mean.dentifera.density_z:Year + (1|Lake) + (1|OLRE), 
@@ -326,60 +324,57 @@ fmList2 <- get.models(msc2, delta < 2)
 summary(model.avg(fmList2))
 
 
-# top model
-mod2a <- glmer(past.max.prev ~ mean.dentifera.density_z + (1|Lake) + (1|OLRE), 
+# top model B
+mod2B <- glmer(past.max.prev ~ mean.dentifera.density_z + (1|Lake) + (1|OLRE), 
              family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
-summary(mod2a)
-
+summary(mod2B)
+overdisp_fun(mod2B)
 
 # second top model
-mod2b <- glmer(past.max.prev ~ mean.dentifera.density_z + Year + (1|Lake) + (1|OLRE), 
+mod2B_2 <- glmer(past.max.prev ~ mean.dentifera.density_z + Year + (1|Lake) + (1|OLRE), 
              family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
-summary(mod2b)
-vif(mod2b)
-overdisp_fun(mod2b)
-Anova(mod2b)
+summary(mod2B_2)
+vif(mod2B_2)
+overdisp_fun(mod2B_2)
+Anova(mod2B_2)
 
 
 
 # Marginal effects from top model
-me2a <- ggpredict(mod2a, c("mean.dentifera.density_z [all]"))
-plot(me2a, add.data = T)
+me2_b <- ggpredict(mod2B, c("mean.dentifera.density_z [all]"))
+plot(me2_b, add.data = T)
 
 
 
 # recalculate original mean Dentifera density
-me2a$x 
+me2_b$x 
 dent_mean <- mean(log(sum.data_dentifera$mean.dentifera.density+1)) # mean of original richness from disease data set
 dent_sd <- sd(log(sum.data_dentifera$mean.dentifera.density+1)) # sd of original richness from disease data set
-me2a$DentMean_log <- t((t(me2a$x) * dent_sd) + dent_mean)
-me2a$DentMean <- exp(me2a$DentMean_log)
+me2_b$DentMean_log <- t((t(me2_b$x) * dent_sd) + dent_mean)
+me2_b$DentMean <- exp(me2_b$DentMean_log)
 
 
 
 # plot of Max Pasteuria prevalence vs mean dentifera density
-MaxPrev_Dent <- ggplot(me2a, aes(x = DentMean, y = predicted)) +
+MaxPrev_Dent <- ggplot(me2_b, aes(x = DentMean, y = predicted)) +
   labs(tag = "B") +
   geom_line(size = 1, color = "#1B9E77") +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, outline.type = NULL, fill = "#1B9E77") +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, fill = "#1B9E77") +
   geom_point(data = sum.data_dentifera, aes(x = mean.dentifera.density+1, y = past.max.prev), size = 2, alpha = 0.4, color = "#1B9E77") +
-  labs(x = bquote("Mean" ~italic("D. dentifera") ~ "Density (no./" ~ "M"^2 ~")"), y = bquote(atop( "","Maximal " ~ italic("Pasteuria") ~ "Prevalence (%)"))) +
-  #ylim(0,1) +
-  geom_text(aes(x = 1000, y= 0.1), label = "p = 0.039") +
+  labs(x = bquote("Mean" ~italic("D. dentifera") ~ "Density (no./" ~ "M"^2*")"), y = bquote(atop( "","Maximal " ~ italic("Pasteuria") ~ "Prevalence"))) +
+  scale_y_continuous(labels = scales::percent) +
+  geom_text(aes(x = 1000, y= 0.1), label = "p = 0.018") +
   scale_x_log10(labels = scales::comma) +
   theme_classic()+
   theme(axis.text = element_text(size = 10, color = "black"), axis.title = element_text(size = 11, color = "black"))
 print(MaxPrev_Dent)
-ggsave("MaxPastPrev_MeanDentifera_predict_color.png", plot = MaxPrev_Dent, dpi = 300, width = 10, height = 10, units = "cm")
+ggsave(here("mi-fielddata-analysis/figures/MaxPastPrev_MeanDentifera_predict_color.png"), plot = MaxPrev_Dent, dpi = 300, width = 10, height = 10, units = "cm")
 
 
 
 
 
-
-
-
-
+## MODEL C
 ##### Models of AUC Pasteuria prev in dentifera, with densities at max prev * Year 
 mod3 <- lmer(log(pasteuria.auc+1) ~ pulicaria.at.max_z + dentifera.at.max_z + retrocurva.at.max_z + richness.at.max_z + Year + 
                pulicaria.at.max_z:Year + dentifera.at.max_z:Year + retrocurva.at.max_z:Year + (1|Lake), data = sum.data_dentifera) 
@@ -387,10 +382,9 @@ summary(mod3)
 vif(mod3)
 plot(mod3)
 qqnorm(resid(mod3))
-qqline(resid(mod3))
+qqline(resid(mod3)) # somewhat heavy lower tail that falls off of the QQ normal line
 overdisp_fun(mod3)
 Anova(mod3)
-
 
 
 # model section ranking by AICc using ML
@@ -405,23 +399,23 @@ fmList3 <- get.models(msc3, delta < 2)
 summary(model.avg(fmList3))
 
 
-# top model
-mod3a <- lmer(log(pasteuria.auc+1) ~ dentifera.at.max_z + (1|Lake), data = sum.data_dentifera)
-summary(mod3a)
+# top model C
+mod3C <- lmer(pasteuria.auc ~ Year + (1|Lake), data = sum.data_dentifera)
+summary(mod3C)
 
 
 # second top model
-mod3b <- lmer(log(pasteuria.auc+1) ~ dentifera.at.max_z + retrocurva.at.max_z + (1|Lake), data = sum.data_dentifera)
-summary(mod3b)
-vif(mod3b)
-overdisp_fun(mod3b)
-Anova(mod3b)
+mod3C_2 <- lmer(log(pasteuria.auc+1) ~ Year + retrocurva.at.max_z + (1|Lake), data = sum.data_dentifera)
+summary(mod3C_2)
+vif(mod3C_2)
+overdisp_fun(mod3C_2)
+Anova(mod3C_2)
 
 
 
 # Marginal effects from top model
-me3a <- ggpredict(mod3a, c("dentifera.at.max_z [all]"))
-plot(me3a, add.data = T)
+me3_c <- ggpredict(mod3C, c("Year"))
+plot(me3_c, add.data = T)
 
 
 
@@ -446,7 +440,7 @@ AUC_Dent <- ggplot(me3a, aes(x = DentMax, y = predicted)) +
   theme_classic() +
   theme(axis.text = element_text(size = 10, color = "black"), axis.title = element_text(size = 11, color = "black"))
 print(AUC_Dent)
-ggsave("AUCPastPrev_DentiferaAtMax_predict_color.png", plot = AUC_Dent, dpi = 300, width = 12, height = 10, units = "cm")
+ggsave(here("mi-fielddata-analysis/figures/AUCPastPrev_DentiferaAtMax_predict_color.png"), plot = AUC_Dent, dpi = 300, width = 12, height = 10, units = "cm")
 
 
 
@@ -519,13 +513,13 @@ AUC_Dent2 <- ggplot(me4a, aes(x = DentMean, y = predicted)) +
   theme_classic() +
   theme(axis.text = element_text(size = 10, color = "black"), axis.title = element_text(size = 11, color = "black"))
 print(AUC_Dent2)
-ggsave("AUCPastPrev_MeanDentifera_predict_color.png", plot = AUC_Dent2, dpi = 300, width = 10, height = 10, units = "cm")
+ggsave(here("mi-fielddata-analysis/figures/AUCPastPrev_MeanDentifera_predict_color.png"), plot = AUC_Dent2, dpi = 300, width = 10, height = 10, units = "cm")
 
 
 
 ### four panel plot of MI field analyses
-MI_full <- grid.arrange(MaxPrev_Pulic, MaxPrev_Dent, AUC_Dent, AUC_Dent2, nrow = 2)
-ggsave("MI_Field_Analysis_predict_color.png", plot = MI_full, dpi = 300, width = 21, height = 20, units = "cm")
+MI_full <- grid.arrange(MaxPrev_Pulic, MaxPrev_Dent, AUC_Dent, AUC_Dent2, nrow = 2, labels = c("A", "B", "C", "D"))
+ggsave(here("mi-fielddata-analysis/figures/MI_Field_Analysis_predict_color.png"), plot = MI_full, dpi = 300, width = 21, height = 20, units = "cm")
 
 
 grid_arrange_shared_legend(MaxPrev_Pulic, MaxPrev_Dent, AUC_Dent, AUC_Dent2)
