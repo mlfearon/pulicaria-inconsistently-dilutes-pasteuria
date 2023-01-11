@@ -224,6 +224,10 @@ sum.data_dentifera$pasteuria.auc_log <- as.numeric(log(sum.data_dentifera$pasteu
 sum.data_dentifera$OLRE <- seq_len(nrow(sum.data_dentifera))
 
 
+# Test the correlation between Pasteuria Maximum prevalence and Area Under the prevalence curve
+cor.test(sum.data_dentifera$past.max.prev, sum.data_dentifera$pasteuria.auc)
+cor.test(sum.data_dentifera$past.max.prev, sum.data_dentifera$pasteuria.auc_log)
+
 
 cor.test(sum.data_dentifera$species.richness, sum.data_dentifera$mean.tot.density)
 cor.test(sum.data_dentifera$species.richness, sum.data_dentifera$mean.dentifera.density)
@@ -255,6 +259,10 @@ fmList <- get.models(msc, delta < 2)
 # Because the models originate from 'dredge(..., rank = AICc, REML = FALSE)',
 # the default weights in 'model.avg' are ML based:
 summary(model.avg(fmList))
+
+# Export AIC table for Model A (delta AIC < 4)
+msc_A <- filter(msc, delta < 4)
+write.csv(msc_A, here("mi-fielddata-analysis/results/ModelA_AIC_table.csv"), quote = F, row.names = F)
 
 
 # top model A
@@ -324,6 +332,13 @@ fmList2 <- get.models(msc2, delta < 2)
 # Because the models originate from 'dredge(..., rank = AICc, REML = FALSE)',
 # the default weights in 'model.avg' are ML based:
 summary(model.avg(fmList2))
+
+
+
+# Export AIC table for Model B (delta AIC < 4)
+msc_B <- filter(msc2, delta < 4)
+write.csv(msc_B, here("mi-fielddata-analysis/results/ModelB_AIC_table.csv"), quote = F, row.names = F)
+
 
 
 # top model B
@@ -399,6 +414,12 @@ fmList3 <- get.models(msc3, delta < 2)
 # Because the models originate from 'dredge(..., rank = AICc, REML = FALSE)',
 # the default weights in 'model.avg' are ML based:
 summary(model.avg(fmList3))
+
+
+# Export AIC table for Model C (delta AIC < 4)
+msc_C <- filter(msc3, delta < 4)
+write.csv(msc_C, here("mi-fielddata-analysis/results/ModelC_AIC_table.csv"), quote = F, row.names = F)
+
 
 
 # top model C
@@ -479,6 +500,11 @@ fmList4 <- get.models(msc4, delta < 2)
 # Because the models originate from 'dredge(..., rank = AICc, REML = FALSE)',
 # the default weights in 'model.avg' are ML based:
 summary(model.avg(fmList4))
+
+
+# Export AIC table for Model D (delta AIC < 4)
+msc_D <- filter(msc4, delta < 4)
+write.csv(msc_D, here("mi-fielddata-analysis/results/ModelD_AIC_table.csv"), quote = F, row.names = F)
 
 
 
