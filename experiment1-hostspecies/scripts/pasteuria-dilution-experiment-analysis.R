@@ -55,7 +55,8 @@ experiment <- experiment %>%
 
 experiment$Diluter.Density_factor <- as.factor(experiment$Diluter.Density)
 
-
+table(experiment$Diluter.Species)
+table(experiment$Diluter.Density)
 
 # model to test for dilution in pasteuria infected dentifera
 
