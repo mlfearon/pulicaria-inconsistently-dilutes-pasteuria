@@ -822,6 +822,9 @@ data_dent.pulic$Year <- as.character(data_dent.pulic$Year)
 data_dent.pulic <- as.data.frame(data_dent.pulic)
 
 
+slope <- lm(past.max.prev.pulicaria ~ past.max.prev.dentifera, data = data_dent.pulic)
+summary(slope)
+
 # Make a figure that shows a 1:1 line and paired pasteuria prevalence in pulicaria and dentifera
 prev_dent_pulic <- ggplot(data = data_dent.pulic, aes(x = past.max.prev.dentifera, y = past.max.prev.pulicaria)) +
   geom_jitter(aes(shape = missing.prev), alpha = 0.5, size = 2, height = 0.0005) +
@@ -831,6 +834,7 @@ prev_dent_pulic <- ggplot(data = data_dent.pulic, aes(x = past.max.prev.dentifer
        shape = "Host Species \nDetected") +
   scale_y_continuous(labels = scales::percent, limits = c(-0.001,0.07)) +
   scale_x_continuous(labels = scales::percent) +
+  annotate("text", x = 0.04, y = 0.065, label = "1:1") +
   theme_classic() +
   theme(axis.text = element_text(size = 10, color = "black"), axis.title = element_text(size = 11, color = "black"))
 prev_dent_pulic
