@@ -5,7 +5,7 @@
 
 
 # Code written by Michelle Fearon
-# Last updated: Dec 13, 2022
+# Last updated: Jan 12, 2023
 
 ## This code analyzes Camden's 2015 Pasteuria Dilution Experiment 
 ## Testing whether resistant Daphnia dentifera, D. retrocurva, or D. pulicaria host species 
