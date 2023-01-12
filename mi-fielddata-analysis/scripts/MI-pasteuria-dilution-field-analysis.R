@@ -98,6 +98,7 @@ data <- read.csv(here("mi-fielddata-analysis/data/Clean-Data-2014-2021_All-Host-
 # total.density = summed density of all host species for that site/date
 
 
+# get data to only include dentifera for main analyeses
 data <- data %>% 
   filter(Year != 2018 & Year != 2020 & Year != 2021) %>% 
   filter(Host.Species == "dentifera") %>% # get infection prevalence data for dentifera only
@@ -107,7 +108,7 @@ data <- data %>%
          OtherHost.density = Pulicaria.density + Retrocurva.density + Ceriodaphnia.density + Dubia.density +
            Parvula.density + Ambigua.density + Mendotae.density) %>%
   select(Host.Species, Lake, Year, Julian.Day, Julian, Total, starts_with("past"), Host.Density:OtherHost.density) # Select only the variables needed in cleaned data set
-
+dim(data)
 
 # diversity metrics per sampling date
 data$species.richness <- rowSums(select(data, Dentifera.density:Mendotae.density) > 0)
@@ -117,7 +118,7 @@ data$shannon <- diversity(select(data, Dentifera.density:Mendotae.density), "sha
 str(data)
 head(data)
 dim(data)
-View(data)
+#View(data)
 
 range(data$Julian)
 
@@ -154,7 +155,7 @@ sum.data <- data %>%
             mean.shannon = mean(shannon, na.rm = T)) %>%             # mean shannon diversity index
   ungroup()
  # note that the error produced is for one lake year (2015 Whitemore) that does not have any records of pasteuria in dentifera that were greater than 20 individuals counted, therefore prevalence could not be calculated for those dates.
-View(sum.data)
+#View(sum.data)
 dim(sum.data)
 
 
@@ -184,7 +185,7 @@ auc_data_past <- auc_data %>%
   arrange(Host.Species, Lake) %>%
   dplyr::rename(pasteuria.auc = AUC.prev2) %>%  # Use AUC.prev2 instead of AUC.prev because it is more accurately calculated
   select(Host.Species, Lake, Year, pasteuria.auc, Max.Prevalence, Count.At.Max:shannon.at.max)
-View(auc_data_past)
+#View(auc_data_past)
 
 str(auc_data_past)
 str(sum.data)
@@ -199,7 +200,7 @@ sum.data$Host.Species <- as.factor(sum.data$Host.Species)
 
 
 # filter out the lake year that doesn't have a valid max prevalence because there was not enough dentifera detected to calculate prevalence
-sum.data <- filter(sum.data, !is.na(Max.Prevalence)) # removed Whitemore in 2015 row.
+sum.data <- filter(sum.data, !is.na(Max.Prevalence)) # removed Whitmore in 2015 row.
 sum.data_dentifera <- as.data.frame(sum.data)
 
 
@@ -475,7 +476,7 @@ ggsave(here("mi-fielddata-analysis/figures/AUCPastPrev_DentiferaAtMax_predict_co
 
 
 
-
+## MODEL D
 ##### Models of AUC Pasteuria prev in dentifera, with mean densities * Year 
 mod4 <- lmer(pasteuria.auc_log ~ mean.pulicaria.density_z + mean.dentifera.density_z + mean.retrocurva.density_z + species.richness_z + Year +
                mean.pulicaria.density_z:Year + mean.dentifera.density_z:Year + mean.retrocurva.density_z:Year + (1|Lake), data = sum.data_dentifera)
@@ -717,7 +718,120 @@ plot(me3, add.data = T)
 
 
 
+#######################################
+# Assessing Maximal Prevalence and AUC for Pasteuria in Pulicaria in the field
+######################################
+
+# load cleaned parasite and host density data 2014 - 2017
+data2 <- read.csv(here("mi-fielddata-analysis/data/Clean-Data-2014-2021_All-Host-Densities.csv"), stringsAsFactors = F)
 
 
+# get data with both dentifera and pulicaria hosts
+data_pulic <- data2 %>% 
+  filter(Year != 2018 & Year != 2020 & Year != 2021) %>% 
+  filter(Host.Species == "dentifera" | Host.Species == "pulicaria") %>% # get infection prevalence data for dentifera only
+  filter(!is.na(Host.Density)) %>%  # remove sample dates with missing density data
+  mutate(past.density.inf = pasteuria.prev * Host.Density, # add pasteuria infected density to data set
+         Diluter.density = Pulicaria.density + Retrocurva.density, # diluter host densities
+         OtherHost.density = Pulicaria.density + Retrocurva.density + Ceriodaphnia.density + Dubia.density +
+           Parvula.density + Ambigua.density + Mendotae.density) %>%
+  select(Host.Species, Lake, Year, Julian.Day, Julian, Total, starts_with("past"), Host.Density:OtherHost.density) # Select only the variables needed in cleaned data set
+dim(data_pulic)
+#View(data_pulic)
+
+# diversity metrics per sampling date
+data_pulic$species.richness <- rowSums(select(data_pulic, Dentifera.density:Mendotae.density) > 0)
+data_pulic$shannon <- diversity(select(data_pulic, Dentifera.density:Mendotae.density), "shannon")
+
+# calculate the max, mean, sd, and se of pasteuria prevalence for each host, lake and year
+sum.data_pulic <- data_pulic %>%
+  group_by(Host.Species, Lake, Year) %>%  # group by host species, lake and year
+  filter(Julian < 305) %>% # remove November dates, only include July - October for max prev and mean densities
+  summarize(past.max.prev = max(pasteuria.prev, na.rm = T),  # calculate max pasteuria infection prevalence
+            past.mean.prev = mean(pasteuria.prev, na.rm = T),# calculate mean pasteuria infection prevalence
+            past.sd.prev = sd(pasteuria.prev, na.rm = T),    # calculate sd pasteuria infection prevalence
+            past.se.prev = sd(pasteuria.prev, na.rm = T)/sqrt(length(pasteuria.prev)),  # calculate standard error pasteuria infection prevalence
+            past.max.inf = max(past.density.inf, na.rm = T),  # maximum pf pasteuria infection density
+            mean.total.count = mean(Total, na.rm = T),   # mean of the total dentifera hosts counted
+            mean.density = mean(Host.Density, na.rm = T),    # mean host density of each species
+            mean.tot.density = mean(Total.Density, na.rm = T),# mean total density of all hosts
+            mean.dentifera.density = mean(Dentifera.density, na.rm = T),# mean dentifera density
+            mean.pulicaria.density = mean(Pulicaria.density, na.rm = T),# mean pulicaria density
+            mean.retrocurva.density = mean(Retrocurva.density, na.rm = T), # mean retrocurva density
+            mean.ceriodaphnia.density = mean(Ceriodaphnia.density, na.rm = T), # mean ceriodaphnia density
+            mean.dubia.density = mean(Dubia.density, na.rm = T), # mean Dubia density
+            mean.parvula.density = mean(Parvula.density, na.rm = T), # mean parvula density
+            mean.ambigua.density = mean(Ambigua.density, na.rm = T), # mean Ambigua density
+            mean.mendotae.density = mean(Mendotae.density, na.rm = T), # mean Mendotae density
+            mean.diluter.density = mean(Diluter.density, na.rm = T),  # mean of diluter hosts (pulicaria + retrocurva)
+            mean.other.density = mean(OtherHost.density, na.rm = T), # mean of all other hotsts (non-dentifera)
+            mean.richness = mean(species.richness, na.rm = T),       # mean species richness
+            mean.shannon = mean(shannon, na.rm = T)) %>%             # mean shannon diversity index
+  ungroup()
+# note that the error produced is for one lake year (2015 Whitemore) that does not have any records of pasteuria in dentifera that were greater than 20 individuals counted, therefore prevalence could not be calculated for those dates.
+#View(sum.data_pulic)
+dim(sum.data_pulic)
+
+sum.data_pulic$Year <- as.character(sum.data_pulic$Year)
+sum.data_pulic$mean.total.count[ is.nan(sum.data_pulic$mean.total.count)] <- 0
 
 
+# add species richness and simpson diversity index to data set
+sum.data_pulic$species.richness <- rowSums(select(sum.data_pulic, mean.dentifera.density:mean.mendotae.density) > 0)
+
+
+unique(sum.data_pulic$Lake)
+
+
+# load data with area under the curve calculated, and host densities on the date of the max prevalence
+auc_data2 <- read.csv(here("mi-fielddata-analysis/data/auc_14to21_prev.csv"), stringsAsFactors = F)
+auc_data2$Year <- as.character(auc_data$Year)
+
+
+# select only Pasteuria data and prep to join with the sum.data 
+auc_data_past_pulic <- auc_data2 %>%
+  filter(Parasite.Species == "pasteuria.prev" & Year != 2020 & Year != 2021) %>%
+  filter(Host.Species == "dentifera" | Host.Species == "pulicaria" ) %>%
+  arrange(Host.Species, Lake) %>%
+  dplyr::rename(pasteuria.auc = AUC.prev2) %>%  # Use AUC.prev2 instead of AUC.prev because it is more accurately calculated
+  select(Host.Species, Lake, Year, pasteuria.auc, Max.Prevalence, Count.At.Max:shannon.at.max)
+#View(auc_data_past_pulic)
+
+str(auc_data_past_pulic)
+str(sum.data_pulic)
+
+sum.data_pulic  <- left_join(sum.data_pulic, auc_data_past_pulic)
+
+sum.data_pulic$past.max.prev[sum.data_pulic$past.max.prev == "-Inf"] <- NA
+
+# pivot wider to get max prev and AUC of pasteuria in dentifera and pulicaria in separate columns
+data_dent.pulic <- sum.data_pulic %>%
+  select(Lake, Year, Host.Species, past.max.prev, pasteuria.auc) %>%
+  tidyr::pivot_wider(names_from = "Host.Species", values_from = c(past.max.prev, pasteuria.auc), names_sep = ".") %>%
+  mutate(missing.prev = if_else(is.na(past.max.prev.dentifera),"Pulicaria only", if_else(is.na(past.max.prev.pulicaria), "Dentifera only", "Both present")),
+         missing.auc = if_else(is.na(pasteuria.auc.dentifera),"Pulicaria only", if_else(is.na(pasteuria.auc.pulicaria), "Dentifera only", "Both present")))  # make a categorical variable to indicate if there were no dentifera or pulicaria to calculate a max prev or AUC
+View(data_dent.pulic)
+
+# replace NAs with Zeros so that points will show up for both host species, but I plan to use the missing categorical variables I just made
+# to indicate which points are missing values because none of that host species was detected.
+data_dent.pulic[is.na(data_dent.pulic)] <- 0
+
+# make year a factor to work in the figures below
+data_dent.pulic$Year <- as.character(data_dent.pulic$Year)
+
+data_dent.pulic <- as.data.frame(data_dent.pulic)
+
+
+# Make a figure that shows a 1:1 line and paired pasteuria prevalence in pulicaria and dentifera
+prev_dent_pulic <- ggplot(data = data_dent.pulic, aes(x = past.max.prev.dentifera, y = past.max.prev.pulicaria)) +
+  geom_jitter(aes(shape = missing.prev), alpha = 0.5, size = 2, height = 0.0005) +
+  geom_smooth(method = "lm", se = FALSE, col = "black") +
+  geom_abline(slope = 1, intercept = 0, size = 1, linetype = "dashed", ylim(0,0.07)) +
+  labs(x = bquote("Maximal " ~ italic("Pasteuria") ~ "Prevalence in" ~ italic("D. dentifera")), y = bquote("Maximal " ~ italic("Pasteuria") ~ "Prevalence in" ~ italic("D. pulicaria")),
+       shape = "Host Species \nDetected") +
+  scale_y_continuous(labels = scales::percent, limits = c(-0.001,0.07)) +
+  scale_x_continuous(labels = scales::percent) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 10, color = "black"), axis.title = element_text(size = 11, color = "black"))
+prev_dent_pulic
+ggsave(here("mi-fielddata-analysis/figures/MaxPastPrev_PulicariaVsDentifera.tiff"), plot = prev_dent_pulic, dpi = 300, width = 5, height = 4, units = "in", compression="lzw")
