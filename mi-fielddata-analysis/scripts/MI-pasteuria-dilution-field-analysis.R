@@ -5,7 +5,7 @@
 
 
 # Code written by Michelle Fearon
-# Last updated: Jan 12, 2023
+# Last updated: Jan 16, 2023
 
 ## This code produces four models to test how host density, species richness, and year correlate with
 ## either maximal Pasteuria prevalence (models A & B) or area under the prevalence curve (models C & D) in D. dentifera, 
@@ -286,7 +286,7 @@ me1_a$PulicMax <- exp(me1_a$PulicMax_log)
 
 display.brewer.pal(3, "Dark2")
 brewer.pal(3, "Dark2")
-
+range(me1_a$PulicMax)
 # Figure 2A: Model A
 # plot of Max Pasteuria prevalence vs pulicaria density at max prevalence
 MaxPrev_Pulic <- ggplot(me1_a, aes(x = PulicMax, y = predicted)) +
@@ -295,8 +295,8 @@ MaxPrev_Pulic <- ggplot(me1_a, aes(x = PulicMax, y = predicted)) +
   geom_jitter(data = sum.data_dentifera, aes(x = pulicaria.at.max+1, y = past.max.prev), size = 2, alpha = 0.4, width = 0.05, color = "#D95F02", shape = 17) +
   labs(x = bquote(italic("D. pulicaria") ~ "Density at Max Prevalence (no./" ~ "M"^2*")"), y = bquote(atop( "","Maximal " ~ italic("Pasteuria") ~ "Prevalence"))) +
   scale_y_continuous(labels = scales::percent) +
-  geom_text(aes(x = 10, y= 0.1), label = "p = 0.097") +
-  scale_x_log10(labels = scales::comma) +
+  geom_text(aes(x = 10, y= 0.1), label = "N.S.") +
+  scale_x_log10(labels = scales::comma, lim = c(0.5, 150000)) +
   theme_classic()+
   theme(axis.text = element_text(size = 10, color = "black"), axis.title = element_text(size = 11, color = "black"))
 print(MaxPrev_Pulic)
@@ -380,7 +380,7 @@ MaxPrev_Dent <- ggplot(me2_b, aes(x = DentMean, y = predicted)) +
   geom_point(data = sum.data_dentifera, aes(x = mean.dentifera.density+1, y = past.max.prev), size = 2, alpha = 0.4, color = "#1B9E77") +
   labs(x = bquote("Mean" ~italic("D. dentifera") ~ "Density (no./" ~ "M"^2*")"), y = bquote(atop( "","Maximal " ~ italic("Pasteuria") ~ "Prevalence"))) +
   scale_y_continuous(labels = scales::percent) +
-  geom_text(aes(x = 1000, y= 0.1), label = "p = 0.018") +
+  geom_text(aes(x = 1000, y= 0.1), label = "p = 0.026") +
   scale_x_log10(labels = scales::comma) +
   theme_classic()+
   theme(axis.text = element_text(size = 10, color = "black"), axis.title = element_text(size = 11, color = "black"))
@@ -466,7 +466,7 @@ AUC_Dent <- ggplot(me3_c, aes(x = DentMax, y = predicted_backtransformed)) +
   geom_ribbon(aes(ymin = conf.low_backtransformed, ymax = conf.high_backtransformed), alpha = 0.2, fill = "#1B9E77") +
   geom_point(data = sum.data_dentifera, aes(x = dentifera.at.max+1, y = pasteuria.auc), size = 2, alpha = 0.4, color = "#1B9E77") +
   labs(x = bquote(italic("D. dentifera") ~ "Density at Max Prevalence (no./" ~ "M"^2*")"), y = bquote(atop("Integrated" ~ italic(" Pasteuria") ~ "Prevalence", "(prevalence x day)"))) +
-  geom_text(aes(x = 2000, y= 4), label = "p = 0.06") +
+  geom_text(aes(x = 2000, y= 4), label = "N.S.") +
   scale_x_log10(labels = scales::comma) +
   theme_classic() +
   theme(axis.text = element_text(size = 10, color = "black"), axis.title = element_text(size = 11, color = "black"))
