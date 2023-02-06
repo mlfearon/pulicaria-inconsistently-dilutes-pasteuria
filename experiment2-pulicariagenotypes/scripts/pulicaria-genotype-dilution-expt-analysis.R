@@ -84,7 +84,7 @@ overdisp_fun <- function(model) {
 # Pasteuria and Metschnikowia prevalence data in Daphnia dentifera
 dentifera_data <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionDentiferaInfectionPrevalence.csv"), stringsAsFactors = F, header = T)
 head(dentifera_data)
-
+dim(dentifera_data)
 
 # Pasteuria and Metschnikowia prevalence data in Daphnia pulicaria
 pulicaria_data <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionPulicariaInfectionPrevalence.csv"), stringsAsFactors = F, header = T)
@@ -175,7 +175,9 @@ dentifera_metsch_lines <- filter(dentifera_metsch, PulicariaLine2 != "Control")
 dentifera_metsch_lines$PulicariaLine2 <- factor(dentifera_metsch_lines$PulicariaLine2, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W"))
 dentifera_metsch_lines2 <- filter(dentifera_metsch_lines, PulicariaLine2 != "Pine") # remove genotype (Pine) that did not get infected
 str(dentifera_metsch_lines)
-
+dim(dentifera_metsch)
+dim(dentifera_metsch_lines)
+dim(dentifera_metsch_lines2)
 
 
 dentifera_past <- dentifera_data2 %>%
@@ -190,7 +192,9 @@ dentifera_past$PulicariaLine2 <- factor(dentifera_past$PulicariaLine2, levels = 
 dentifera_past_lines <- filter(dentifera_past, PulicariaLine2 != "Control")
 dentifera_past_lines$PulicariaLine2 <- factor(dentifera_past_lines$PulicariaLine2, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W"))
 dentifera_past_lines2 <- filter(dentifera_past_lines, PulicariaLine2 != "Pine", PulicariaLine2 != "Clear5") # remove genotype (Pine and Clear5) that did not get infected
-
+dim(dentifera_past)
+dim(dentifera_past_lines)
+dim(dentifera_past_lines2)
 
 
 
