@@ -202,7 +202,10 @@ sum.data$Host.Species <- as.factor(sum.data$Host.Species)
 # filter out the lake year that doesn't have a valid max prevalence because there was not enough dentifera detected to calculate prevalence
 sum.data <- filter(sum.data, !is.na(Max.Prevalence)) # removed Whitmore in 2015 row.
 sum.data_dentifera <- as.data.frame(sum.data)
+dim(sum.data_dentifera)
 
+range(sum.data_dentifera$richness.at.max)
+range(sum.data_dentifera$species.richness)
 
 # Center and scale all continuous variables, densities get log + 1 transformation
 sum.data_dentifera$mean.tot.density_z <- as.numeric(scale(log(sum.data_dentifera$mean.tot.density)))
@@ -293,7 +296,7 @@ MaxPrev_Pulic <- ggplot(me1_a, aes(x = PulicMax, y = predicted)) +
   geom_line(size = 1,  color = "#D95F02") +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, fill = "#D95F02") +
   geom_jitter(data = sum.data_dentifera, aes(x = pulicaria.at.max+1, y = past.max.prev), size = 2, alpha = 0.4, width = 0.05, color = "#D95F02", shape = 17) +
-  labs(x = bquote(italic("D. pulicaria") ~ "Density at Max Prevalence (no./" ~ "M"^2*")"), y = bquote(atop( "","Maximal " ~ italic("Pasteuria") ~ "Prevalence"))) +
+  labs(x = bquote(italic("D. pulicaria") ~ "Density at Max Prevalence (no." ~ "m"^-2*")"), y = bquote(atop("Maximal " ~ italic("Pasteuria") ~ "Prevalence", "in" ~italic("D. dentifera")))) +
   scale_y_continuous(labels = scales::percent) +
   geom_text(aes(x = 10, y= 0.1), label = "N.S.") +
   scale_x_log10(labels = scales::comma, lim = c(0.5, 150000)) +
@@ -310,6 +313,8 @@ ggsave(here("mi-fielddata-analysis/figures/MaxPastPrev_PulicariaAtMax_predict_co
 modA_3 <- glmer(past.max.prev ~ dentifera.at.max_z + (1|Lake) + (1|OLRE), 
               family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
 summary(modA_3)
+
+
 
 
 
@@ -378,7 +383,7 @@ MaxPrev_Dent <- ggplot(me2_b, aes(x = DentMean, y = predicted)) +
   geom_line(size = 1, color = "#1B9E77") +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, fill = "#1B9E77") +
   geom_point(data = sum.data_dentifera, aes(x = mean.dentifera.density+1, y = past.max.prev), size = 2, alpha = 0.4, color = "#1B9E77") +
-  labs(x = bquote("Mean" ~italic("D. dentifera") ~ "Density (no./" ~ "M"^2*")"), y = bquote(atop( "","Maximal " ~ italic("Pasteuria") ~ "Prevalence"))) +
+  labs(x = bquote("Mean" ~italic("D. dentifera") ~ "Density (no." ~ "m"^-2*")"), y = bquote(atop("Maximal " ~ italic("Pasteuria") ~ "Prevalence", "in" ~italic("D. dentifera")))) +
   scale_y_continuous(labels = scales::percent) +
   geom_text(aes(x = 1000, y= 0.1), label = "p = 0.026") +
   scale_x_log10(labels = scales::comma) +
@@ -465,13 +470,13 @@ AUC_Dent <- ggplot(me3_c, aes(x = DentMax, y = predicted_backtransformed)) +
   geom_line(size = 1, color = "#1B9E77") +
   geom_ribbon(aes(ymin = conf.low_backtransformed, ymax = conf.high_backtransformed), alpha = 0.2, fill = "#1B9E77") +
   geom_point(data = sum.data_dentifera, aes(x = dentifera.at.max+1, y = pasteuria.auc), size = 2, alpha = 0.4, color = "#1B9E77") +
-  labs(x = bquote(italic("D. dentifera") ~ "Density at Max Prevalence (no./" ~ "M"^2*")"), y = bquote(atop("Integrated" ~ italic(" Pasteuria") ~ "Prevalence", "(prevalence x day)"))) +
+  labs(x = bquote(italic("D. dentifera") ~ "Density at Max Prevalence (no." ~ "m"^-2*")"), y = bquote(atop("Integrated" ~ italic(" Pasteuria") ~ "Prevalence",  "in" ~italic("D. dentifera")~ "(prevalence x day)"))) +
   geom_text(aes(x = 2000, y= 4), label = "N.S.") +
   scale_x_log10(labels = scales::comma) +
   theme_classic() +
   theme(axis.text = element_text(size = 10, color = "black"), axis.title = element_text(size = 11, color = "black"))
 print(AUC_Dent)
-ggsave(here("mi-fielddata-analysis/figures/AUCPastPrev_DentiferaAtMax_predict_color.tiff"), plot = AUC_Dent, dpi = 300, width = 12, height = 10, units = "cm", compression="lzw")
+ggsave(here("mi-fielddata-analysis/figures/AUCPastPrev_DentiferaAtMax_predict_color.tiff"), plot = AUC_Dent, dpi = 300, width = 10, height = 10, units = "cm", compression="lzw")
 
 
 
@@ -544,7 +549,7 @@ AUC_Dent2 <- ggplot(me4_d, aes(x = DentMean, y = predicted_backtransformed)) +
   geom_line(size = 1, color = "#1B9E77") +
   geom_ribbon(aes(ymin = conf.low_backtransformed, ymax = conf.high_backtransformed), alpha = 0.2, fill = "#1B9E77") +
   geom_point(data = sum.data_dentifera, aes(x = mean.dentifera.density+1, y = pasteuria.auc), size = 2, alpha = 0.4, color = "#1B9E77") +
-  labs(x = bquote("Mean" ~italic("D. dentifera") ~ "Density (no./" ~ "M"^2*")"), y = bquote(atop("Integrated" ~ italic("Pasteuria") ~ "Prevalence", "(prevalence x day)"))) +
+  labs(x = bquote("Mean" ~italic("D. dentifera") ~ "Density (no." ~ "m"^-2*")"), y = bquote(atop("Integrated" ~ italic("Pasteuria") ~ "Prevalence", "in" ~italic("D. dentifera")~ "(prevalence x day)"))) +
   geom_text(aes(x = 2000, y= 4), label = "p = 0.014") +
   scale_x_log10(labels = scales::comma) +
   theme_classic() +
@@ -556,7 +561,7 @@ ggsave(here("mi-fielddata-analysis/figures/AUCPastPrev_MeanDentifera_predict_col
 
 ### four panel plot of MI field analyses
 MI_full <- ggarrange(MaxPrev_Pulic, MaxPrev_Dent, AUC_Dent, AUC_Dent2, ncol = 2, nrow = 2, labels = c("A", "B", "C", "D"))
-ggsave(here("mi-fielddata-analysis/figures/MI_Field_Analysis_predict_color.tiff"), plot = MI_full, dpi = 300, width = 8, height = 8, units = "in", compression="lzw")
+ggsave(here("mi-fielddata-analysis/figures/Fig2_MI_Field_Analysis_predict_color.tiff"), plot = MI_full, dpi = 300, width = 8, height = 8, units = "in", compression="lzw")
 
 
 
