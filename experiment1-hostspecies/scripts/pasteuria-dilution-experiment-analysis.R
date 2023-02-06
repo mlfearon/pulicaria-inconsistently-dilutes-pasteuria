@@ -95,7 +95,7 @@ ggsave(here("experiment1-hostspecies", "figures", "DilutionExperiment_predicted.
 
 
 
-# attempt to add points to the plot above.
+# add points to the plot above.
 plot_predict2 <- plot_predict + 
   geom_jitter(data = experiment, aes(x = Diluter.Density, y = Prevalence, color = Diluter.Species, shape = Diluter.Species), size = 2, width = 0.4, height = 0.02, alpha = 0.7) +
   scale_color_brewer(palette = "Dark2", name = "Diluter Species", labels = c(bquote(italic("D. dentifera")), bquote(italic("D. pulicaria")), bquote(italic("D. retrocurva")))) +
@@ -113,12 +113,13 @@ a <- emmeans(mod2, specs = pairwise ~ Diluter.Species | Diluter.Density, type = 
 a
 
 # estimates of the slopes of each diluter species based on changes in density
-ab <- emtrends(mod2, pairwise ~ Diluter.Species, var="Diluter.Density", type = "response")
+ab <- emtrends(mod2, pairwise ~ Diluter.Species, var="Diluter.Density", type = "response", infer = c(TRUE, TRUE), at=list(Diluter.Density=c(4)))
 ab
 
 
-
-
+mean_prev <- experiment %>%
+  group_by(Diluter.Species, Diluter.Density_factor) %>%
+  summarize(Prev_mean = mean(Prevalence))
 
 
 ## CUT FOR FINAL VERSION OF CODE??
