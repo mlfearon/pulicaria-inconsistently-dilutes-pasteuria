@@ -1,12 +1,19 @@
-## This code analyzes Michelle's 2021 Dilution Follow-up Experiment 
+## Experiment 2 Code for "Mixed evidence for a dilution effect in Daphnia communities infected by a bacterial parasite"
+
+
+# Submitted to: Oecologia
+
 
 # Code written by Michelle Fearon
+# Last updated: Jan 12, 2023
 
-
-setwd("C:/Users/mlfea/OneDrive/Documents/PROJECTS/MHMP Daphnia Duffy/Generality of dilution (MHMP)/Pulicaria dilution paper/Pulicaria dilution experiment 2 (Michelle)")
+## This code analyzes Michelle's 2021 Dilution Follow-up Experiment 
+## Testing whether different D. pulicaria genotypes have a different capacity
+## to dilute Metschnikowia and Pasteuria parasites
 
 
 # libraries
+library(tidyverse)
 library(dplyr)
 library(lme4)
 library(glmmTMB)
@@ -17,7 +24,13 @@ library(ggpubr)
 library(car)
 library(MuMIn)
 library(emmeans)
+library(olsrr)
 library(RColorBrewer)
+library(brms)
+library(here)
+
+# set the path to the script relative to the project root directory
+here::i_am("experiment2-pulicariagenotypes/scripts/pulicaria-genotype-dilution-expt-analysis.R")
 
 
 # function to make a grid plot with a shared legend
@@ -69,21 +82,32 @@ overdisp_fun <- function(model) {
 
 
 # Pasteuria and Metschnikowia prevalence data in Daphnia dentifera
-dentifera_data <- read.csv("DilutionDentiferaInfectionPrevalence.csv", stringsAsFactors = F, header = T)
+dentifera_data <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionDentiferaInfectionPrevalence.csv"), stringsAsFactors = F, header = T)
 head(dentifera_data)
-
+dim(dentifera_data)
 
 # Pasteuria and Metschnikowia prevalence data in Daphnia pulicaria
-pulicaria_data <- read.csv("DilutionPulicariaInfectionPrevalence.csv", stringsAsFactors = F, header = T)
+pulicaria_data <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionPulicariaInfectionPrevalence.csv"), stringsAsFactors = F, header = T)
 head(pulicaria_data)
+
+# check for any infections in the diluter pulicaria
+metsch_prev_pulic <- pulicaria_data %>%
+  filter(Parasite == "Metschnikowia") %>%
+  summarize(Total.Metsch.Prev = sum(Total_Infected)/sum(Total_N))
+metsch_prev_pulic
+
+past_prev_pulic <- pulicaria_data %>%
+  filter(Parasite == "Pasteuria") %>%
+  summarize(Total.Past.Prev = sum(Total_Infected)/sum(Total_N))
+past_prev_pulic
 
 
 ## Body Size data 
-pulic_bodysize <- read.csv("DilutionPulicariaBodySize.csv", stringsAsFactors = F, header = T)
+pulic_bodysize <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionPulicariaBodySize.csv"), stringsAsFactors = F, header = T)
 head(pulic_bodysize)
 pulic_bodysize <- arrange(pulic_bodysize, PulicariaLine)
 
-?order()
+
 
 # calculate mean and sd of pulicaria body sizes
 pulic_bodysize2 <- pulic_bodysize %>% 
@@ -101,8 +125,12 @@ bodysizeplot
 # check if there are significant differences in bodysize among pulicaria genotypes
 size_mod <- lm(BodySize_um ~ PulicariaLine, data = pulic_bodysize)
 summary(size_mod)
-plot(size_mod) # residuals are fairly normally distributed
 Anova(size_mod)
+plot(size_mod) # residuals are fairly normally distributed
+ols_plot_resid_qq(size_mod)
+ols_test_normality(size_mod)  # Shapiro-Wilk test is not significant, indicates reasonably normal distribution
+ols_test_breusch_pagan(size_mod) # test of homogenicity of variance is not significant, variance is constant
+
 
 # check sig differences among each pair of genotypes
 size_dif <- emmeans(size_mod, specs = pairwise ~ PulicariaLine, type = "response")
@@ -111,14 +139,14 @@ size_dif
 # visualize differences in bodysize among different pulicaria genotypes
 me_size <- ggpredict(size_mod, c("PulicariaLine"))
 plot(me_size, add.data = T) +
-  labs(y= bquote("Body Size ("~ mu~"m)"), x = "Pulicaria Genotype", title = NULL) +
+  labs(y= bquote("Body Size ("*mu*"m)"), x = "Pulicaria Genotype", title = NULL) +
   geom_text(aes(y = 2100), label = c("a","a","b","ab","b", "ab"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
   theme(axis.text = element_text(size = 8, color = "black"), axis.title = element_text(size = 11, color = "black"))
-ggsave("Pulicaria_BodySize.tiff", dpi = 600, width = 3, height = 3.5, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Pulicaria_BodySize.tiff"), dpi = 600, width = 3, height = 3.5, units = "in", compression="lzw")
 
 
-
+## pulicaria genotypes have significantly different bodysizes
 
 
 # add body size to dentifera and pulicaria prevalence data
@@ -137,6 +165,7 @@ View(pulicaria_data2)
 dentifera_metsch <- dentifera_data2 %>%
   filter(Parasite == "Metschnikowia")
 dentifera_metsch <- arrange(dentifera_metsch, group_by = Treatment, PulicariaLine)
+dentifera_metsch <- mutate(dentifera_metsch, Treatment2 = if_else(Treatment == "control", 1, 2))
 str(dentifera_metsch)
 dentifera_metsch$PulicariaLine <- factor(dentifera_metsch$PulicariaLine, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control1", "Control2"))
 dentifera_metsch$PulicariaLine2 <- factor(dentifera_metsch$PulicariaLine2, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
@@ -144,13 +173,17 @@ dentifera_metsch$PulicariaLine2 <- factor(dentifera_metsch$PulicariaLine2, level
 
 dentifera_metsch_lines <- filter(dentifera_metsch, PulicariaLine2 != "Control")
 dentifera_metsch_lines$PulicariaLine2 <- factor(dentifera_metsch_lines$PulicariaLine2, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W"))
+dentifera_metsch_lines2 <- filter(dentifera_metsch_lines, PulicariaLine2 != "Pine") # remove genotype (Pine) that did not get infected
 str(dentifera_metsch_lines)
-
+dim(dentifera_metsch)
+dim(dentifera_metsch_lines)
+dim(dentifera_metsch_lines2)
 
 
 dentifera_past <- dentifera_data2 %>%
   filter(Parasite == "Pasteuria")
 dentifera_past <- arrange(dentifera_past, group_by = Treatment, PulicariaLine)
+dentifera_past <- mutate(dentifera_past, Treatment2 = if_else(Treatment == "control", 1, 2))
 str(dentifera_past)
 dentifera_past$PulicariaLine <- factor(dentifera_past$PulicariaLine, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control1", "Control2"))
 dentifera_past$PulicariaLine2 <- factor(dentifera_past$PulicariaLine2, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
@@ -158,8 +191,10 @@ dentifera_past$PulicariaLine2 <- factor(dentifera_past$PulicariaLine2, levels = 
 
 dentifera_past_lines <- filter(dentifera_past, PulicariaLine2 != "Control")
 dentifera_past_lines$PulicariaLine2 <- factor(dentifera_past_lines$PulicariaLine2, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W"))
-
-
+dentifera_past_lines2 <- filter(dentifera_past_lines, PulicariaLine2 != "Pine", PulicariaLine2 != "Clear5") # remove genotype (Pine and Clear5) that did not get infected
+dim(dentifera_past)
+dim(dentifera_past_lines)
+dim(dentifera_past_lines2)
 
 
 
@@ -167,25 +202,60 @@ dentifera_past_lines$PulicariaLine2 <- factor(dentifera_past_lines$PulicariaLine
 
 ### Dentifera Metsch prevalence models
 
-
-#  comparison of pulicaria genotype and body size
-dent_metsch_mod <- glm(Prevalence ~ PulicariaLine * BodySize_mm, family = "binomial", weights = N, data = dentifera_metsch)
+# first test comparing diluter treatments to controls
+dent_metsch_mod <- glm(Prevalence ~ Treatment, family = "binomial", weights = N, data = dentifera_metsch)
 summary(dent_metsch_mod)
-vif(dent_metsch_mod)
-plot(dent_metsch_mod)
 Anova(dent_metsch_mod, test.statistic = "Wald")  # not significant interaction between genotype and bodysize on prevalence
 overdisp_fun(dent_metsch_mod)
 
+# pairwise comparison of control vs diluter treatments
+metsch_treatment <- emmeans(dent_metsch_mod, specs = pairwise ~ Treatment, type = "response")
+metsch_treatment
+
+metsch_treatment_prob <- as.data.frame(metsch_treatment$emmeans)
+
+
+# plot of predicted values of prevalence by diluter treatments vs controls
+me_metsch_treatment <- ggpredict(dent_metsch_mod, c("Treatment"))
+me_metsch_treatment$Treatment2 <- c("Control", "Diluter")
+pulic_colors1 <- c("#666666", "#d95f02")
+metsch_predict_treatment <- ggplot() + 
+  scale_x_discrete(labels = c("Control", "Diluter")) +
+  geom_jitter(data = dentifera_metsch, aes(x = Treatment, y = Prevalence, color = Treatment), size = 2, width = 0.2, height = 0.01, alpha = 0.6) +
+  geom_pointrange(data = metsch_treatment_prob, aes(x = Treatment, y = prob, ymax = asymp.UCL, ymin = asymp.LCL), color = "black", linewidth = 1) +
+  scale_color_manual(values = pulic_colors1) +
+  scale_y_continuous(labels = scales::percent, limit = c(-0.05,1.02)) +
+  labs(x = "Treatment", y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0.2), legend.position = "none")
+metsch_predict_treatment
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_Diluter-v-Control.tiff"), plot = metsch_predict_treatment, dpi = 600, width = 3, height = 4, units = "in", compression="lzw")
+
+
+
+
+
+
+
+#  Next test for effects of pulicaria genotype and body size, and their interaction (removed the controls and the Pine genotype that did not have any infection)
+dent_metsch_mod2 <- glm(Prevalence ~ PulicariaLine2 * BodySize_mm, family = "binomial", weights = N, data = dentifera_metsch_lines2)
+summary(dent_metsch_mod2)
+vif(dent_metsch_mod2, type = "predictor")
+Anova(dent_metsch_mod2, test.statistic = "Wald")  # not significant interaction between genotype and bodysize on prevalence
+overdisp_fun(dent_metsch_mod2)
+
 # calculates the pairwise tests for each genus within each site 
-#(determines if there are sig differences in Pasteuria prev between each pulicaria genotpye for a given body size = 1.89 mm)
-a <- emmeans(dent_metsch_mod, specs = pairwise ~ PulicariaLine | BodySize_mm, type = "response")
+#(determines if there are sig differences in metsch prev between each pulicaria genotpye for a given body size = 1.89 mm)
+a <- emmeans(dent_metsch_mod2, specs = pairwise ~ PulicariaLine2 | BodySize_mm, type = "response")
 a
 
 
 # plot of predicted values of prevalence by diluter density and diluter host species
-me <- ggpredict(dent_metsch_mod, c("PulicariaLine", "BodySize_mm"))
+me <- ggpredict(dent_metsch_mod2, c("PulicariaLine2", "BodySize_mm"))
 plot(me, add.data = F)
 
+#There is no significant interaction between bodysize and pulicaria genotype. But genotype and bodysize are also quite correlated together
+# shown by the high VIFs for the model. Try testing genotype and bodysize effects on disease prevalence independently.
 
 # plot_predict <- ggplot(data = me, aes(x = x, y = predicted)) +
 #   geom_line(aes(color = x), size = 1) +
@@ -199,104 +269,110 @@ plot(me, add.data = F)
 
 
 
-#  comparison of pulicaria genotype and controls only
-dent_metsch_mod2 <- glm(Prevalence ~ PulicariaLine2, family = "binomial", weights = N, data = dentifera_metsch)
-summary(dent_metsch_mod2)
-Anova(dent_metsch_mod2, test.statistic = "Wald")
-#plot(dent_metsch_mod2)
-overdisp_fun(dent_metsch_mod2)
+# Test of effect of pulicaria genotype only on Metsch prevalence (Pine genotype removed from analysis)
+dent_metsch_mod3 <- glm(Prevalence ~ PulicariaLine2, family = "binomial", weights = N, data = dentifera_metsch_lines2)
+summary(dent_metsch_mod3)
+Anova(dent_metsch_mod3, test.statistic = "Wald")
+overdisp_fun(dent_metsch_mod3)
 
-predict(dent_metsch_mod2, type = "response")
-dent_metsch_mod2$fitted.values
-dent_metsch_mod2$ci.upper
+predict(dent_metsch_mod3, type = "response")
+dent_metsch_mod3$fitted.values
+dent_metsch_mod3$ci.upper
 
 # calculates the pairwise tests for each genus within each site 
 #(determines if there are sig differences in Pasteuria prev between each pulicaria genotype)
-b<- emmeans(dent_metsch_mod2, specs = pairwise ~ PulicariaLine2, type = "response")
+b<- emmeans(dent_metsch_mod3, specs = pairwise ~ PulicariaLine2, type = "response")
 b
 
 
+#extract predicted infection probabilities and confidence intervals
+metsch_prob <- as.data.frame(b$emmeans)
+
 # plot of predicted values of prevalence by diluter genotype
-me2 <- ggpredict(dent_metsch_mod2, c("PulicariaLine2"), type = "zi.prob")
-me2$x <- factor(me2$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
+me2 <- ggpredict(dent_metsch_mod3, c("PulicariaLine2"))
 
 
-pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
-pulic_colors2 <- c(rep("#d95f02", 6))
+pulic_colors2 <- c("#d95f02")
 
-metsch_predict <- plot(me2, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
-  labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
-  geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
-  geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
+metsch_genotype_predict <- ggplot() +
+  geom_jitter(data = dentifera_metsch_lines, aes(x = PulicariaLine2, y = Prevalence), color = pulic_colors2, size = 2, width = 0.2, height = 0.01, alpha = 0.6) +
+  geom_pointrange(data = metsch_prob, aes(x = PulicariaLine2, y = prob, ymax = asymp.UCL, ymin = asymp.LCL), color = "black", linewidth = 1) +
+  scale_y_continuous(labels = scales::percent, limit = c(-0.05,1.02)) +
+  labs(x = bquote(italic("D. pulicaria")~ "Diluter Genotype"), y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
   theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
-metsch_predict
-ggsave("Metsch_PulicariaGenotype.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0.2))
+metsch_genotype_predict
+
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype_update.tiff"), plot = metsch_genotype_predict, dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 
 
 # try with zero-inflated model
-dent_metsch_mod2a <- glmmTMB(Prevalence ~ PulicariaLine2, ziformula = ~PulicariaLine2, family = "binomial", weights = N, data = dentifera_metsch)
-summary(dent_metsch_mod2a)
-Anova(dent_metsch_mod2a, test.statistic = "Wald")
+dent_metsch_mod3a <- glmmTMB(Prevalence ~ PulicariaLine2, ziformula = ~PulicariaLine2, family = "binomial", weights = N, data = dentifera_metsch_lines2, na.action=na.omit)
+summary(dent_metsch_mod3a)
+Anova(dent_metsch_mod3a, test.statistic = "Chisq")
 #plot(dent_metsch_mod2)
-overdisp_fun(dent_metsch_mod2a)
+#overdisp_fun(dent_metsch_mod2a)
 
+# Zero-inflated model is 10 AIC higher than the mod3 above.
+AIC(dent_metsch_mod3, dent_metsch_mod3a)
 
 
 # calculates the pairwise tests for each genus within each site 
 #(determines if there are sig differences in Pasteuria prev between each pulicaria genotype)
-b<- emmeans(dent_metsch_mod2a, specs = pairwise ~ PulicariaLine2, type = "response")
-b
+c <- emmeans(dent_metsch_mod3a, specs = pairwise ~ PulicariaLine2, type = "response")
+c
 
 
 # plot of predicted values of prevalence by diluter genotype
-me2a <- ggpredict(dent_metsch_mod2a, c("PulicariaLine2"), type = "zi.prob")
-me2a$x <- factor(me2a$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
-
+me3a <- ggpredict(dent_metsch_mod3a, c("PulicariaLine2"), type = "zi.prob")
+me3a$x <- factor(me3a$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
+View(me3a)
 
 pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
 
-metsch_predict_a <- plot(me2a, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
+metsch_predict_a <- plot(me3a, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
   labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
   geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 metsch_predict_a
-ggsave("Metsch_PulicariaGenotype_zeroinf.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype_zeroinf.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 
 
 
+
+### TO BE CUT
 
 # try the model above with a logistic regression
-dent_metsch_mod2b <- logistf(Prevalence ~ PulicariaLine2, weights = N, data = dentifera_metsch)
-summary(dent_metsch_mod2b)
-anova(dent_metsch_mod2b)
+dent_metsch_mod3b <- logistf(Prevalence ~ PulicariaLine2, weights = N, data = dentifera_metsch)
+summary(dent_metsch_mod3b)
+anova(dent_metsch_mod3b)
 
-predict(dent_metsch_mod2b, type = "response")
-coef(dent_metsch_mod2b, type = "response")
-exp(confint(dent_metsch_mod2b, type = "response"))
-dent_metsch_mod2b$ci.lower
-dent_metsch_mod2b$ci.upper
+predict(dent_metsch_mod3b, type = "response")
+coef(dent_metsch_mod3b, type = "response")
+exp(confint(dent_metsch_mod3b, type = "response"))
+dent_metsch_mod3b$ci.lower
+dent_metsch_mod3b$ci.upper
 
-me2b <- ggpredict(dent_metsch_mod2b, c("PulicariaLine2"))
-me2b$x <- factor(me2b$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
+me3b <- ggpredict(dent_metsch_mod3b, c("PulicariaLine2"))
+me3b$x <- factor(me3b$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
 
 
 pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
 
-metsch_predict_b <- plot(me2b, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
+metsch_predict_b <- plot(me3b, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
   labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
-  geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
+  geom_vline(xintercept = 6.5, color = "black", linewidth = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 metsch_predict_b
-ggsave("Metsch_PulicariaGenotype_logistic.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype_logistic.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 
@@ -304,104 +380,90 @@ ggsave("Metsch_PulicariaGenotype_logistic.tiff", dpi = 600, width = 5, height = 
 
 # try the model above with a rare events logistic regression
 library(Zelig)
-dent_metsch_mod2c <- relogit(Prevalence ~ PulicariaLine2, weights = N, data = dentifera_metsch)
-summary(dent_metsch_mod2c)
-anova(dent_metsch_mod2c)
+dent_metsch_mod3c <- relogit(Prevalence ~ PulicariaLine2, weights = N, data = dentifera_metsch)
+summary(dent_metsch_mod3c)
+anova(dent_metsch_mod3c)
 
 
 
-me2c <- ggpredict(dent_metsch_mod2c, c("PulicariaLine2"))
-me2c$x <- factor(me2c$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
+me3c <- ggpredict(dent_metsch_mod3c, c("PulicariaLine2"))
+me3c$x <- factor(me3c$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
 
 
 pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
 
-metsch_predict_c <- plot(me2c, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
+metsch_predict_c <- plot(me3c, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
   labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
-  geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
+  geom_vline(xintercept = 6.5, color = "black", linewidth = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 metsch_predict_c
-ggsave("Metsch_PulicariaGenotype_logistic2.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype_logistic2.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 library(logistf)
 # try the model above with a logistic regression with added covariate (to help model predictions!)
-dent_metsch_mod2d <- flac(lfobject = dent_metsch_mod2b)
-summary(dent_metsch_mod2d)
+dent_metsch_mod3d <- flac(lfobject = dent_metsch_mod2b, data = dentifera_metsch)
+summary(dent_metsch_mod3d)
 
-predict(dent_metsch_mod2d, type = "response")
+predict(dent_metsch_mod3d, type = "response")
 
 
 # try the model above with a logistic regression with adjusted intercept (to help model predictions!)
-dent_metsch_mod2e <- flic(lfobject = dent_metsch_mod2b)
-dent_metsch_mod2e <- logistf(Prevalence ~ PulicariaLine2, weights = N, flic = T, data = dentifera_metsch)
-summary(dent_metsch_mod2e)
+dent_metsch_mod3e <- flic(lfobject = dent_metsch_mod2b)
+dent_metsch_mod3e <- logistf(Prevalence ~ PulicariaLine2, weights = N, flic = T, data = dentifera_metsch)
+summary(dent_metsch_mod3e)
 
 
-predict(dent_metsch_mod2e, type = "response")
-coef(dent_metsch_mod2e, type = "response")
-exp(confint(dent_metsch_mod2e, type = "response"))
-dent_metsch_mod2e$ci.lower
-dent_metsch_mod2e$ci.upper
-get_sigma(dent_metsch_mod2e)
+predict(dent_metsch_mod3e, type = "response")
+coef(dent_metsch_mod3e, type = "response")
+exp(confint(dent_metsch_mod3e, type = "response"))
+dent_metsch_mod3e$ci.lower
+dent_metsch_mod3e$ci.upper
+get_sigma(dent_metsch_mod3e)
 
-me2e <- ggpredict(dent_metsch_mod2e, c("PulicariaLine2"))
-me2e$x <- factor(me2e$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
+me3e <- ggpredict(dent_metsch_mod3e, c("PulicariaLine2"))
+me3e$x <- factor(me3e$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
 
 
 pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
 
-metsch_predict_e <- plot(me2e, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
+metsch_predict_e <- plot(me3e, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
   labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
-  geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
+  geom_vline(xintercept = 6.5, color = "black", linewidth = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 metsch_predict_e
-ggsave("Metsch_PulicariaGenotype_logistic3.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
-
-
-
-
-
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype_logistic3.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 
 
 ### There is a significant difference between pulicaria diluters and control treatments, but there is not a significant 
-### difference among the pulicaria lines, nor with boysize
+### difference among the pulicaria lines, nor with bodysize
 
 
 #  comparison of pulicaria bodysize against Metsch prevalence in dentifera
-dent_metsch_mod3 <- glm(Prevalence ~ BodySize_mm_mean, family = "binomial", weights = N, data = dentifera_metsch)
-summary(dent_metsch_mod3)
-Anova(dent_metsch_mod3, test.statistic = "Wald")
-plot(dent_metsch_mod3)
+dent_metsch_mod4 <- glm(Prevalence ~ BodySize_mm_mean, family = "binomial", weights = N, data = dentifera_metsch_lines2)
+summary(dent_metsch_mod4)
+Anova(dent_metsch_mod4, test.statistic = "Wald")
+overdisp_fun(dent_metsch_mod4)
 
 
 # plot of predicted values of prevalence by pulicaria bodysize
-me3 <- ggpredict(dent_metsch_mod3, c("BodySize_mm_mean [all]"))
-plot(me3, add.data = F) + 
+me4 <- ggpredict(dent_metsch_mod4, c("BodySize_mm_mean [all]"))
+plot(me4, add.data = F) + 
   labs(x = "Body Size (mm)", y = "Fungal Prevalence (%)", title = NULL)
 
 ## No significant effect of body size
 
 
-# Comparison of diluter vs control treatments for pasteuria
-#  comparison of pulicaria genotype and controls only
-dent_metsch_mod4 <- glm(Prevalence ~ Treatment, family = "binomial", weights = N, data = dentifera_metsch)
-summary(dent_metsch_mod4)
-Anova(dent_metsch_mod4, test.statistic = "Wald")
-plot(dent_metsch_mod4)
 
 
 
-# plot of predicted values of prevalence by diluter treatments vs controls
-me4 <- ggpredict(dent_metsch_mod4, c("Treatment"))
-plot(me4, add.data = F) + 
-  labs(x = "Treatment", y = "Fungal Prevalence (%)", title = NULL)
+
 
 
 
@@ -409,22 +471,53 @@ plot(me4, add.data = F) +
 
 ### Dentifera Pasteuria prevalence models
 
-
-#  comparison of pulicaria genotype and body size
-dent_past_mod <- glm(Prevalence ~ PulicariaLine * BodySize_mm, family = "binomial", weights = N, data = dentifera_past)
-summary(dent_past_mod)  #something isn't quite right about this model, weird predictions
-vif(dent_past_mod)
+# first test comparing diluter treatments to controls
+# Comparison of diluter vs control treatments for pasteuria
+#  comparison of pulicaria genotype and controls only
+dent_past_mod <- glm(Prevalence ~ Treatment, family = "binomial", weights = N, data = dentifera_past)
+summary(dent_past_mod)
 Anova(dent_past_mod, test.statistic = "Wald")
-plot(dent_past_mod)
+overdisp_fun(dent_past_mod)
+
+
+past_treatment <- emmeans(dent_past_mod, specs = pairwise ~ Treatment, type = "response")
+past_treatment
+
+past_treatment_prob <- as.data.frame(past_treatment$emmeans)
+
+# plot of predicted values of prevalence by diluter treatments vs controls
+me_past_treatment <- ggpredict(dent_past_mod, c("Treatment"))
+me_past_treatment$Treatment2 <- c("Control", "Diluter")
+past_predict_treatment <- ggplot() +
+  scale_x_discrete(labels = c("Control", "Diluter")) +
+  geom_jitter(data = dentifera_past, aes(x = Treatment, y = Prevalence, color = Treatment), size = 2, width = 0.2, height = 0.01, alpha = 0.6) +
+  geom_pointrange(data = past_treatment_prob, aes(x = Treatment, y = prob, ymax = asymp.UCL, ymin = asymp.LCL), color = "black", linewidth = 1) +
+  scale_color_manual(values = pulic_colors1) +
+  scale_y_continuous(labels = scales::percent, limit = c(-0.05,1.02)) +
+  labs(x = "Treatment", y = bquote(italic("Pasteuria ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"), legend.position = "none")
+past_predict_treatment
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Past_Diluter-v-Control.tiff"), plot = past_predict_treatment, dpi = 600, width = 3, height = 4, units = "in", compression="lzw")
+
+
+
+
+#  Next test for effects of pulicaria genotype and body size, and their interaction (removed the controls and the Pine genotype that did not have any infection)
+dent_past_mod2 <- glm(Prevalence ~ PulicariaLine2 * BodySize_mm, family = "binomial", weights = N, data = dentifera_past_lines2)
+summary(dent_past_mod2)  #something isn't quite right about this model, weird predictions
+vif(dent_past_mod2)
+Anova(dent_past_mod2, test.statistic = "Wald")
+overdisp_fun(dent_past_mod2)
 
 # calculates the pairwise tests for each genus within each site 
 #(determines if there are sig differences in Pasteuria prev between each pulicaria genotpye for a given body size = 1.89 mm)
-c <- emmeans(dent_past_mod, specs = pairwise ~ PulicariaLine | BodySize_mm, type = "response")
-c
+d <- emmeans(dent_past_mod2, specs = pairwise ~ PulicariaLine2 | BodySize_mm, type = "response")
+d
 
 
 # plot of predicted values of prevalence by diluter density and diluter host species
-me4 <- ggpredict(dent_past_mod, c("PulicariaLine", "BodySize_mm"))
+me4 <- ggpredict(dent_past_mod2, c("PulicariaLine2", "BodySize_mm"))
 plot(me4, add.data = F)
 
 
@@ -441,62 +534,60 @@ plot(me4, add.data = F)
 
 
 #  comparison of pulicaria genotype and controls only
-dent_past_mod2 <- glm(Prevalence ~ PulicariaLine2, family = "binomial", weights = N, data = dentifera_past)
-summary(dent_past_mod2)
-Anova(dent_past_mod2, test.statistic = "Wald")
-plot(dent_past_mod2)
-overdisp_fun(dent_past_mod2)
+dent_past_mod3 <- glm(Prevalence ~ PulicariaLine2, family = "binomial", weights = N, data = dentifera_past_lines2)
+summary(dent_past_mod3)
+Anova(dent_past_mod3, test.statistic = "Wald")
+overdisp_fun(dent_past_mod3)
+
+
 
 
 # calculates the pairwise tests for each genus within each site 
 #(determines if there are sig differences in Pasteuria prev between each pulicaria genotype)
-d<- emmeans(dent_past_mod2, specs = pairwise ~ PulicariaLine2, type = "response")
-d
+e<- emmeans(dent_past_mod3, specs = pairwise ~ PulicariaLine2, type = "response")
+e
 
 
-# plot of predicted values of prevalence by diluter density and diluter host species
-me5 <- ggpredict(dent_past_mod2, c("PulicariaLine2"))
-View(me5)
-str(me5)
-me5$x <- factor(me5$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "W", "Control"))
+#extract predicted infection probabilities and confidence intervals
+past_prob <- as.data.frame(e$emmeans)
+
+# plot of predicted values of prevalence by diluter genotype
+me5 <- ggpredict(dent_past_mod3, c("PulicariaLine2"))
 
 
+pulic_colors2 <- c("#d95f02")
 
-
-pulic_colors <- c(rep("#d95f02", 6), rep("black",1))
-
-
-past_predict <- plot(me5, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
-  labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Pasteuria ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
-  geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
-  geom_text(aes(y = 1.05), label = c("ab","ab","ab","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
+past_genotype_predict <- ggplot() +
+  geom_jitter(data = dentifera_past_lines, aes(x = PulicariaLine2, y = Prevalence), color = pulic_colors2, size = 2, width = 0.2, height = 0.01, alpha = 0.6) +
+  geom_pointrange(data = past_prob, aes(x = PulicariaLine2, y = prob, ymax = asymp.UCL, ymin = asymp.LCL), color = "black", linewidth = 1) +
+  scale_y_continuous(labels = scales::percent, limit = c(-0.05,1.02)) +
+  labs(x = bquote(italic("D. pulicaria")~ "Diluter Genotype"), y = bquote(italic("Pasteuria ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
   theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 9, color = "black"))
-past_predict
-ggsave("Pasteuria_PulicariaGenotype.tiff", plot = past_predict, dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
+past_genotype_predict
+
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Past_PulicariaGenotype_update.tiff"), plot = past_genotype_predict, dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+
 
 
 ## Figure 3
-# joint figure of pasteuria and metsch prevalence vs pulicaria genotype
-Figure <- ggarrange(past_predict, metsch_predict, labels = c("A", "B"),ncol = 1, nrow = 2)
-ggsave("Prevalence_PulicariaGenotype.tiff", plot = Figure, dpi = 600, width = 4, height = 6, units = "in", compression="lzw")
+# joint figure of pasteuria and metsch prevalence control vs diluters and prevalence vs pulicaria genotype
+Figure3 <- ggarrange(past_predict_treatment, past_genotype_predict, metsch_predict_treatment, metsch_genotype_predict, labels = c("A", "B", "C", "D"), ncol = 2, nrow = 2, widths = c(3,5))
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Figure3.tiff"), plot = Figure3, dpi = 600, width = 7, height = 6, units = "in", compression="lzw")
 
 
-# past_predict <- ggplot(data = dentifera_past, aes(x = PulicariaLine, y = Prevalence)) +
-#   geom_jitter(width = 0.2, height = 0, alpha = 0.5, color = "#d95f02") +
-#   geom_vline(xintercept = 6.5, color = "black") +
-#   labs(x = "Pulicaria Genotype", y = "Bacterial Prevalence (%)") +
-#   theme_classic()
-# past_predict
-# 
-# past_predict_update <- past_predict +
-#   geom_point(data = me5, aes(x= x, y = predicted), size = 0.6)
-# #geom_errorbar(data = me5, aes(x= x,  ymin = conf.low, ymax = conf.high))
-# past_predict_update
-# ggsave("Pasteuria_PulicariaGenotype.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
-# 
+
+# prevalence vs body size
+dent_past_mod4 <- glm(Prevalence ~ BodySize_mm_mean, family = "binomial", weights = N, data = dentifera_past_lines2)
+summary(dent_past_mod4)  #not significant
+Anova(dent_past_mod4, test.statistic = "Wald")
+overdisp_fun((dent_past_mod4))
 
 
+
+
+
+### TO BE CUT
 
 # try the model above with a logistic regression
 dent_past_mod2b <- logistf(Prevalence ~ PulicariaLine2, weights = N, data = dentifera_past)
@@ -516,13 +607,13 @@ me2b$x <- factor(me2b$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "
 pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
 
 past_predict_b <- plot(me2b, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
-  labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("pastnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
-  geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
+  labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Pasteuria ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
+  geom_vline(xintercept = 6.5, color = "black", linewidth = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 past_predict_b
-ggsave("past_PulicariaGenotype_logistic.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "past_PulicariaGenotype_logistic.tiff"), plot = past_predict_b, dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 
@@ -543,17 +634,17 @@ me2c$x <- factor(me2c$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "
 pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
 
 past_predict_c <- plot(me2c, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
-  labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
-  geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
+  labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Pasteuria ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
+  geom_vline(xintercept = 6.5, color = "black", linewidth = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 past_predict_c
-ggsave("past_PulicariaGenotype_logistic2.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "past_PulicariaGenotype_logistic2.tiff"), plot = past_predict_c, dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 # try the model above with a logistic regression with added covariate (to help model predictions!)
-dent_past_mod2d <- flac(lfobject = dent_past_mod2b)
+dent_past_mod2d <- flac(lfobject = dent_past_mod2b, data = dentifera_past)
 summary(dent_past_mod2d)
 
 predict(dent_past_mod2d, type = "response")
@@ -579,91 +670,116 @@ me2e$x <- factor(me2e$x, levels = c("BA", "Clear5", "Clover", "Mid67", "Pine", "
 pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
 
 past_predict_e <- plot(me2e, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
-  labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
-  geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
+  labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Pasteuria ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
+  geom_vline(xintercept = 6.5, color = "black", linewidth = 1.5) +
   geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black", hjust = 0))
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 past_predict_e
-ggsave("past_PulicariaGenotype_logistic3.tiff", dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "past_PulicariaGenotype_logistic3.tiff"), plot = past_predict_e, dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
 
 
 
-?vegan::adonis
 
 
 
 
-# prevalence vs body size
-dent_past_mod3 <- glm(Prevalence ~ BodySize_mm_mean, family = "binomial", weights = N, data = dentifera_past)
-summary(dent_past_mod3)  #not significant
-Anova(dent_past_mod3, test.statistic = "Wald")
 
 
 
-# Comparison of diluter vs control treatments for pasteuria
-#  comparison of pulicaria genotype and controls only
-dent_past_mod4 <- glm(Prevalence ~ Treatment, family = "binomial", weights = N, data = dentifera_past)
-summary(dent_past_mod4)
-Anova(dent_past_mod4, test.statistic = "Wald")
-plot(dent_past_mod4)
 
+
+
+
+### TO BE CUT
+
+
+
+# convert data set into true binary output for infection [WORK IN PROGRESS]
+dentifera_past_binary <- dentifera_past %>%
+  uncount(N) %>%
+  group_by(Parasite, PulicariaLine, Rep) %>%
+  mutate(Infection = as.integer(row_number() <= Total_Infected[1])) %>%
+  select(PulicariaLine:Prevalence, Infection, Date:BodySize_mm_sd,Notes)
+
+dentifera_past_binary_diluters <- dentifera_past_binary %>%
+  filter(Treatment == "diluter")
+
+View(dentifera_past_binary)
+
+model1 <- glmer(Infection ~ Treatment + (1|PulicariaLine2/Rep),family = "binomial", data = dentifera_past_binary)  # this model should have random effects
+summary(model1)
+Anova(model1)
+overdisp_fun(model1)
+h <- emmeans(model1, specs = pairwise ~ Treatment, type = "response")
+
+model2 <- glmer(Infection ~ PulicariaLine2 + (1|PulicariaLine2:Rep),family = "binomial", data = dentifera_past_binary_diluters)  # this model should have random effects
+summary(model2)
+Anova(model2)
+overdisp_fun(model2)
+h2 <- emmeans(model2, specs = pairwise ~ PulicariaLine2, type = "response")
+
+
+
+
+
+### Bayesian Analysis of Pasteuria data
+
+## Try dentifera past infection prevalence vs control/duluter treatment with Bayesian methods
+#  initial model, uniform priors
+dent_past_BAYmod <- brm(Infection ~ Treatment + (1|PulicariaLine2/Rep), family = bernoulli(), data = dentifera_past_binary, control = list(adapt_delta = 0.98))
+summary(dent_past_BAYmod)
+plot(dent_past_BAYmod)
+bayes_R2(dent_past_BAYmod)
+mcmc_plot(dent_past_BAYmod)
+mcmc_plot(dent_past_BAYmod, type = "hist", binwidth = 0.05)
+mcmc_plot(dent_past_BAYmod, type = "areas_ridges", prob = 0.5)
+prior_summary(dent_past_BAYmod)
+pairs(dent_past_BAYmod)
+
+i <- emmeans(dent_past_BAYmod, specs = pairwise ~ Treatment, type = "response")
+
+
+# update the priors (weakly informative)
+new_priors <- c(
+  set_prior(class = 'b', coef = 'Treatmentdiluter', prior = 'normal(0,1)'),
+  set_prior(class = 'Intercept', prior = 'normal(0,4)'),
+  set_prior(class = 'sd', prior = 'student_t(3, 0, 2.5)')
+)
+
+
+dent_past_BAYmod2 <- brm(Infection ~ Treatment + (1|PulicariaLine2/Rep), 
+                        family = bernoulli(), 
+                        prior = new_priors,
+                        data = dentifera_past_binary, 
+                        control = list(adapt_delta = 0.98))
+summary(dent_past_BAYmod2)
+prior_summary(dent_past_BAYmod2)
+plot(dent_past_BAYmod2)
+mcmc_plot(dent_past_BAYmod2)
+
+waic_1 <- waic(dent_past_BAYmod)
+waic_2 <- waic(dent_past_BAYmod2)
+loo_compare(waic_1, waic_2)
+
+loo_1 <- loo(dent_past_BAYmod, moment_match = TRUE)
+loo_2 <- loo(dent_past_BAYmod2)
+loo_compare(loo_1, loo_2)
 
 
 # plot of predicted values of prevalence by diluter treatments vs controls
-me6 <- ggpredict(dent_past_mod4, c("Treatment"))
-plot(me6, add.data = F) + 
-  labs(x = "Treatment", y = "Bacteria Prevalence (%)", title = NULL)
-
-
-# comparison of prevalence in dentifera based on diluter genotype
-dentifera_past_dilute <- dentifera_past %>%
-  filter(Treatment == "diluter")
-
-dent_past_mod7 <- glm(Prevalence ~ PulicariaLine, family = "binomial", weights = N, data = dentifera_past_dilute)
-summary(dent_past_mod7)
-e<- emmeans(dent_past_mod7, specs = pairwise ~ PulicariaLine, type = "response")
-e
-
-
-dim(dentifera_past)
+me_bayes1 <- ggpredict(dent_past_BAYmod, c("Treatment"))
+past_predict_treatment <- plot(me_bayes1, add.data = F) + 
+  labs(x = "Treatment", y = bquote(italic("Pasteuria ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) +
+  theme_classic() +
+  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
+past_predict_treatment
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Past_Diluter-v-Control.tiff"), plot = past_predict_treatment, dpi = 600, width = 3, height = 4, units = "in", compression="lzw")
 
 
 
-### attempt to analyze the data in a different way...ALL THE SAME OUTCOME
-data2 <- read.csv("DilutionDentiferaInfectionPrevalence_Combined.csv", stringsAsFactors = F, header = T)
-head(data2)
-pdata <- filter(data, Parasite == "Pasteuria")
-
-model <- glm(Prevalence ~ PulicariaLine,family = "binomial", weights = N, data = pdata)
-summary(model)
-Anova(model)
-f <- emmeans(model, specs = pairwise ~ PulicariaLine, type = "response")
-
-
-data <- read.csv("DilutionDentiferaInfectionPrevalence_Expanded.csv", stringsAsFactors = F, header = T)
-head(data)
-pdata <- filter(data, Parasite == "Pasteuria")
-
-model2 <- glm(Infected ~ PulicariaLine,family = "binomial", data = data)
-summary(model2)
-Anova(model2)
-g <- emmeans(model2, specs = pairwise ~ PulicariaLine, type = "response")
-
-
-model3 <- logistf(Infected ~ PulicariaLine, data = data)
-summary(model3)
-Anova(model3)
-
-model4 <- flac(Infected ~ PulicariaLine, data = data)
-summary(model4)
-model4$linear.predictors
-
-me_4 <- ggpredict(model4, "PulicariaLine")
-plot(me4)
-class(model4)
 
 
 
