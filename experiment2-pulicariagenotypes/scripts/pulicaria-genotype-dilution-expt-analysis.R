@@ -564,7 +564,7 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Past_PulicariaGenotype
 
 
 
-## Figure 4
+## Figure 4, panels A-D
 # joint figure of pasteuria and metsch prevalence control vs diluters and prevalence vs pulicaria genotype
 Figure4 <- ggarrange(past_predict_treatment, past_genotype_predict, metsch_predict_treatment, metsch_genotype_predict, labels = c("A", "B", "C", "D"), ncol = 2, nrow = 2, widths = c(3,5))
 ggsave(here("experiment2-pulicariagenotypes", "figures", "Figure4.tiff"), plot = Figure3, dpi = 600, width = 7, height = 6, units = "in", compression="lzw")
