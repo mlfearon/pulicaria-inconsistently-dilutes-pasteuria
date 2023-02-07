@@ -1,11 +1,11 @@
-## Experiment 2 Code for "Mixed evidence for a dilution effect in Daphnia communities infected by a bacterial parasite"
+## Experiment 2 Code for "Inconsistent dilution: Experimental but not field evidence for a dilution effect in Daphnia–bacteria interactions"
 
 
 # Submitted to: Oecologia
 
 
 # Code written by Michelle Fearon
-# Last updated: Jan 12, 2023
+# Last updated: Feb 6, 2023
 
 ## This code analyzes Michelle's 2021 Dilution Follow-up Experiment 
 ## Testing whether different D. pulicaria genotypes have a different capacity
@@ -64,8 +64,6 @@ grid_arrange_shared_legend <- function(..., ncol = length(list(...)), nrow = 1, 
 }
 
 
-
-
 ## updated overdispersion function from Ben Bolker
 overdisp_fun <- function(model) {
   rdf <- df.residual(model)
@@ -76,10 +74,8 @@ overdisp_fun <- function(model) {
   c(chisq=Pearson.chisq,ratio=prat,rdf=rdf,p=pval)
 }
 
-
-
+###################################
 ##### load experimental data
-
 
 # Pasteuria and Metschnikowia prevalence data in Daphnia dentifera
 dentifera_data <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionDentiferaInfectionPrevalence.csv"), stringsAsFactors = F, header = T)
@@ -94,14 +90,17 @@ head(pulicaria_data)
 metsch_prev_pulic <- pulicaria_data %>%
   filter(Parasite == "Metschnikowia") %>%
   summarize(Total.Metsch.Prev = sum(Total_Infected)/sum(Total_N))
-metsch_prev_pulic
+metsch_prev_pulic  # no Metsch infections in pulicaria
 
 past_prev_pulic <- pulicaria_data %>%
   filter(Parasite == "Pasteuria") %>%
   summarize(Total.Past.Prev = sum(Total_Infected)/sum(Total_N))
-past_prev_pulic
+past_prev_pulic  # no Pasteuria infections in pulicaria
 
 
+
+
+#############################
 ## Body Size data 
 pulic_bodysize <- read.csv(here("experiment2-pulicariagenotypes", "data", "DilutionPulicariaBodySize.csv"), stringsAsFactors = F, header = T)
 head(pulic_bodysize)
@@ -134,8 +133,9 @@ ols_test_breusch_pagan(size_mod) # test of homogenicity of variance is not signi
 
 # check sig differences among each pair of genotypes
 size_dif <- emmeans(size_mod, specs = pairwise ~ PulicariaLine, type = "response")
-size_dif
+size_dif   # Yes, body size varies among different pulicaria genotypes
 
+### Appendix S1: Figure S2
 # visualize differences in bodysize among different pulicaria genotypes
 me_size <- ggpredict(size_mod, c("PulicariaLine"))
 plot(me_size, add.data = T) +
@@ -149,6 +149,9 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Pulicaria_BodySize.tif
 ## pulicaria genotypes have significantly different bodysizes
 
 
+
+
+#############################################
 # add body size to dentifera and pulicaria prevalence data
 dentifera_data2 <- full_join(dentifera_data, pulic_bodysize)
 dentifera_data2 <- full_join(dentifera_data2, pulic_bodysize2)
@@ -158,7 +161,6 @@ View(dentifera_data2)
 pulicaria_data2 <- full_join(pulicaria_data, pulic_bodysize)
 pulicaria_data2 <- full_join(pulicaria_data2, pulic_bodysize2)
 View(pulicaria_data2)
-
 
 
 # split dentifera data by parasite
@@ -199,7 +201,7 @@ dim(dentifera_past_lines2)
 
 
 
-
+#####################################
 ### Dentifera Metsch prevalence models
 
 # first test comparing diluter treatments to controls
@@ -214,7 +216,7 @@ metsch_treatment
 
 metsch_treatment_prob <- as.data.frame(metsch_treatment$emmeans)
 
-
+## Figure 4C
 # plot of predicted values of prevalence by diluter treatments vs controls
 me_metsch_treatment <- ggpredict(dent_metsch_mod, c("Treatment"))
 me_metsch_treatment$Treatment2 <- c("Control", "Diluter")
@@ -233,16 +235,15 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_Diluter-v-Contr
 
 
 
-
-
-
-
 #  Next test for effects of pulicaria genotype and body size, and their interaction (removed the controls and the Pine genotype that did not have any infection)
 dent_metsch_mod2 <- glm(Prevalence ~ PulicariaLine2 * BodySize_mm, family = "binomial", weights = N, data = dentifera_metsch_lines2)
 summary(dent_metsch_mod2)
 vif(dent_metsch_mod2, type = "predictor")
-Anova(dent_metsch_mod2, test.statistic = "Wald")  # not significant interaction between genotype and bodysize on prevalence
 overdisp_fun(dent_metsch_mod2)
+
+### Appendix S1: Table S10
+Anova(dent_metsch_mod2, test.statistic = "Wald")  # no significant interaction between genotype and bodysize on prevalence
+
 
 # calculates the pairwise tests for each genus within each site 
 #(determines if there are sig differences in metsch prev between each pulicaria genotpye for a given body size = 1.89 mm)
@@ -268,7 +269,7 @@ plot(me, add.data = F)
 # ggsave("DilutionExperiment_predicted.png", plot = plot_predict, dpi = 300, width = 12, height = 10, units = "cm")
 
 
-
+# Since bodysize was not an important factor in the model, we removed it and focused on genotype effects only (model results presented in main text)
 # Test of effect of pulicaria genotype only on Metsch prevalence (Pine genotype removed from analysis)
 dent_metsch_mod3 <- glm(Prevalence ~ PulicariaLine2, family = "binomial", weights = N, data = dentifera_metsch_lines2)
 summary(dent_metsch_mod3)
@@ -290,10 +291,9 @@ metsch_prob <- as.data.frame(b$emmeans)
 
 # plot of predicted values of prevalence by diluter genotype
 me2 <- ggpredict(dent_metsch_mod3, c("PulicariaLine2"))
-
-
 pulic_colors2 <- c("#d95f02")
 
+## Figure 4D
 metsch_genotype_predict <- ggplot() +
   geom_jitter(data = dentifera_metsch_lines, aes(x = PulicariaLine2, y = Prevalence), color = pulic_colors2, size = 2, width = 0.2, height = 0.01, alpha = 0.6) +
   geom_pointrange(data = metsch_prob, aes(x = PulicariaLine2, y = prob, ymax = asymp.UCL, ymin = asymp.LCL), color = "black", linewidth = 1) +
@@ -307,6 +307,8 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenoty
 
 
 
+#### Other versions of the final Metschnikowia model presented in the text that we tried for dealing with separation in the data (i.e. treatments with zero infection prevalence) 
+###  that ultimately did not produce successful models
 
 # try with zero-inflated model
 dent_metsch_mod3a <- glmmTMB(Prevalence ~ PulicariaLine2, ziformula = ~PulicariaLine2, family = "binomial", weights = N, data = dentifera_metsch_lines2, na.action=na.omit)
@@ -342,12 +344,6 @@ metsch_predict_a
 ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype_zeroinf.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
-
-
-
-
-### TO BE CUT
-
 # try the model above with a logistic regression
 dent_metsch_mod3b <- logistf(Prevalence ~ PulicariaLine2, weights = N, data = dentifera_metsch)
 summary(dent_metsch_mod3b)
@@ -375,15 +371,11 @@ metsch_predict_b
 ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype_logistic.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
-
-
-
 # try the model above with a rare events logistic regression
 library(Zelig)
 dent_metsch_mod3c <- relogit(Prevalence ~ PulicariaLine2, weights = N, data = dentifera_metsch)
 summary(dent_metsch_mod3c)
 anova(dent_metsch_mod3c)
-
 
 
 me3c <- ggpredict(dent_metsch_mod3c, c("PulicariaLine2"))
@@ -438,12 +430,13 @@ metsch_predict_e <- plot(me3e, add.data = T, jitter = c(0.5,0.01), colors = puli
 metsch_predict_e
 ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype_logistic3.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
+# ultimately none of these other attempts produced a better model than the one presented in the main text
 
 
 
-### There is a significant difference between pulicaria diluters and control treatments, but there is not a significant 
-### difference among the pulicaria lines, nor with bodysize
 
+### There is a significant difference in Metsch prevalence between pulicaria diluters and control treatments, but there is not a significant 
+### difference in Metsch prevalence among the pulicaria lines, nor with bodysize
 
 #  comparison of pulicaria bodysize against Metsch prevalence in dentifera
 dent_metsch_mod4 <- glm(Prevalence ~ BodySize_mm_mean, family = "binomial", weights = N, data = dentifera_metsch_lines2)
@@ -457,18 +450,14 @@ me4 <- ggpredict(dent_metsch_mod4, c("BodySize_mm_mean [all]"))
 plot(me4, add.data = F) + 
   labs(x = "Body Size (mm)", y = "Fungal Prevalence (%)", title = NULL)
 
-## No significant effect of body size
+## No significant effect of body size on Metschnikowia prevalence
 
 
 
 
 
 
-
-
-
-
-
+#############################################
 ### Dentifera Pasteuria prevalence models
 
 # first test comparing diluter treatments to controls
@@ -485,6 +474,8 @@ past_treatment
 
 past_treatment_prob <- as.data.frame(past_treatment$emmeans)
 
+
+# Figure 4A
 # plot of predicted values of prevalence by diluter treatments vs controls
 me_past_treatment <- ggpredict(dent_past_mod, c("Treatment"))
 me_past_treatment$Treatment2 <- c("Control", "Diluter")
@@ -507,11 +498,13 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Past_Diluter-v-Control
 dent_past_mod2 <- glm(Prevalence ~ PulicariaLine2 * BodySize_mm, family = "binomial", weights = N, data = dentifera_past_lines2)
 summary(dent_past_mod2)  #something isn't quite right about this model, weird predictions
 vif(dent_past_mod2)
-Anova(dent_past_mod2, test.statistic = "Wald")
 overdisp_fun(dent_past_mod2)
 
+## Appendix S1: Table S10
+Anova(dent_past_mod2, test.statistic = "Wald")
+
 # calculates the pairwise tests for each genus within each site 
-#(determines if there are sig differences in Pasteuria prev between each pulicaria genotpye for a given body size = 1.89 mm)
+#(determines if there are sig differences in Pasteuria prev between each pulicaria genotype for a given body size = 1.89 mm)
 d <- emmeans(dent_past_mod2, specs = pairwise ~ PulicariaLine2 | BodySize_mm, type = "response")
 d
 
@@ -533,6 +526,8 @@ plot(me4, add.data = F)
 
 
 
+# Since bodysize was not an important factor in the model, we removed it and focused on genotype effects only (model results presented in main text)
+# Test of effect of pulicaria genotype only on Pasteuria prevalence (Pine and Clear5 genotypes removed from analysis due to no infection in those genotypes)
 #  comparison of pulicaria genotype and controls only
 dent_past_mod3 <- glm(Prevalence ~ PulicariaLine2, family = "binomial", weights = N, data = dentifera_past_lines2)
 summary(dent_past_mod3)
@@ -553,10 +548,9 @@ past_prob <- as.data.frame(e$emmeans)
 
 # plot of predicted values of prevalence by diluter genotype
 me5 <- ggpredict(dent_past_mod3, c("PulicariaLine2"))
-
-
 pulic_colors2 <- c("#d95f02")
 
+## Figure 4D
 past_genotype_predict <- ggplot() +
   geom_jitter(data = dentifera_past_lines, aes(x = PulicariaLine2, y = Prevalence), color = pulic_colors2, size = 2, width = 0.2, height = 0.01, alpha = 0.6) +
   geom_pointrange(data = past_prob, aes(x = PulicariaLine2, y = prob, ymax = asymp.UCL, ymin = asymp.LCL), color = "black", linewidth = 1) +
@@ -570,24 +564,28 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Past_PulicariaGenotype
 
 
 
-## Figure 3
+## Figure 4
 # joint figure of pasteuria and metsch prevalence control vs diluters and prevalence vs pulicaria genotype
-Figure3 <- ggarrange(past_predict_treatment, past_genotype_predict, metsch_predict_treatment, metsch_genotype_predict, labels = c("A", "B", "C", "D"), ncol = 2, nrow = 2, widths = c(3,5))
-ggsave(here("experiment2-pulicariagenotypes", "figures", "Figure3.tiff"), plot = Figure3, dpi = 600, width = 7, height = 6, units = "in", compression="lzw")
+Figure4 <- ggarrange(past_predict_treatment, past_genotype_predict, metsch_predict_treatment, metsch_genotype_predict, labels = c("A", "B", "C", "D"), ncol = 2, nrow = 2, widths = c(3,5))
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Figure4.tiff"), plot = Figure3, dpi = 600, width = 7, height = 6, units = "in", compression="lzw")
 
 
 
+
+### There is a significant difference in Pasteuria prevalence between pulicaria diluters and control treatments, but there is not a significant 
+### difference in Pasteuria prevalence among the pulicaria lines, nor with bodysize
 # prevalence vs body size
 dent_past_mod4 <- glm(Prevalence ~ BodySize_mm_mean, family = "binomial", weights = N, data = dentifera_past_lines2)
 summary(dent_past_mod4)  #not significant
 Anova(dent_past_mod4, test.statistic = "Wald")
 overdisp_fun((dent_past_mod4))
 
+# Pasteuria prevalence in dentifera is not affected by pulicaria body size
 
 
 
-
-### TO BE CUT
+#### Other versions of the final Pasteuria model presented in the text that we tried for dealing with separation in the data (i.e. treatments with zero infection prevalence) 
+###  that ultimately did not produce successful models
 
 # try the model above with a logistic regression
 dent_past_mod2b <- logistf(Prevalence ~ PulicariaLine2, weights = N, data = dentifera_past)
@@ -677,176 +675,3 @@ past_predict_e <- plot(me2e, add.data = T, jitter = c(0.5,0.01), colors = pulic_
   theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 past_predict_e
 ggsave(here("experiment2-pulicariagenotypes", "figures", "past_PulicariaGenotype_logistic3.tiff"), plot = past_predict_e, dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### TO BE CUT
-
-
-
-# convert data set into true binary output for infection [WORK IN PROGRESS]
-dentifera_past_binary <- dentifera_past %>%
-  uncount(N) %>%
-  group_by(Parasite, PulicariaLine, Rep) %>%
-  mutate(Infection = as.integer(row_number() <= Total_Infected[1])) %>%
-  select(PulicariaLine:Prevalence, Infection, Date:BodySize_mm_sd,Notes)
-
-dentifera_past_binary_diluters <- dentifera_past_binary %>%
-  filter(Treatment == "diluter")
-
-View(dentifera_past_binary)
-
-model1 <- glmer(Infection ~ Treatment + (1|PulicariaLine2/Rep),family = "binomial", data = dentifera_past_binary)  # this model should have random effects
-summary(model1)
-Anova(model1)
-overdisp_fun(model1)
-h <- emmeans(model1, specs = pairwise ~ Treatment, type = "response")
-
-model2 <- glmer(Infection ~ PulicariaLine2 + (1|PulicariaLine2:Rep),family = "binomial", data = dentifera_past_binary_diluters)  # this model should have random effects
-summary(model2)
-Anova(model2)
-overdisp_fun(model2)
-h2 <- emmeans(model2, specs = pairwise ~ PulicariaLine2, type = "response")
-
-
-
-
-
-### Bayesian Analysis of Pasteuria data
-
-## Try dentifera past infection prevalence vs control/duluter treatment with Bayesian methods
-#  initial model, uniform priors
-dent_past_BAYmod <- brm(Infection ~ Treatment + (1|PulicariaLine2/Rep), family = bernoulli(), data = dentifera_past_binary, control = list(adapt_delta = 0.98))
-summary(dent_past_BAYmod)
-plot(dent_past_BAYmod)
-bayes_R2(dent_past_BAYmod)
-mcmc_plot(dent_past_BAYmod)
-mcmc_plot(dent_past_BAYmod, type = "hist", binwidth = 0.05)
-mcmc_plot(dent_past_BAYmod, type = "areas_ridges", prob = 0.5)
-prior_summary(dent_past_BAYmod)
-pairs(dent_past_BAYmod)
-
-i <- emmeans(dent_past_BAYmod, specs = pairwise ~ Treatment, type = "response")
-
-
-# update the priors (weakly informative)
-new_priors <- c(
-  set_prior(class = 'b', coef = 'Treatmentdiluter', prior = 'normal(0,1)'),
-  set_prior(class = 'Intercept', prior = 'normal(0,4)'),
-  set_prior(class = 'sd', prior = 'student_t(3, 0, 2.5)')
-)
-
-
-dent_past_BAYmod2 <- brm(Infection ~ Treatment + (1|PulicariaLine2/Rep), 
-                        family = bernoulli(), 
-                        prior = new_priors,
-                        data = dentifera_past_binary, 
-                        control = list(adapt_delta = 0.98))
-summary(dent_past_BAYmod2)
-prior_summary(dent_past_BAYmod2)
-plot(dent_past_BAYmod2)
-mcmc_plot(dent_past_BAYmod2)
-
-waic_1 <- waic(dent_past_BAYmod)
-waic_2 <- waic(dent_past_BAYmod2)
-loo_compare(waic_1, waic_2)
-
-loo_1 <- loo(dent_past_BAYmod, moment_match = TRUE)
-loo_2 <- loo(dent_past_BAYmod2)
-loo_compare(loo_1, loo_2)
-
-
-# plot of predicted values of prevalence by diluter treatments vs controls
-me_bayes1 <- ggpredict(dent_past_BAYmod, c("Treatment"))
-past_predict_treatment <- plot(me_bayes1, add.data = F) + 
-  labs(x = "Treatment", y = bquote(italic("Pasteuria ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) +
-  theme_classic() +
-  theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
-past_predict_treatment
-ggsave(here("experiment2-pulicariagenotypes", "figures", "Past_Diluter-v-Control.tiff"), plot = past_predict_treatment, dpi = 600, width = 3, height = 4, units = "in", compression="lzw")
-
-
-
-
-
-
-
-
-#### NPMANOVA example
-
-
-## Load iris dataset:
-data(iris)
-## Scatterplot for two variables:
-library(lattice)
-xyplot(Sepal.Length ~ Sepal.Width, groups = Species, data = iris,
-       pch = 16, auto.key = TRUE)
-
-library(vegan)
-Y <- iris[, c("Sepal.Length", "Sepal.Width")]
-## Perform the NPMANOVA:
-adonis2(Y ~ iris$Species, method = "euclidean")
-
-
-# post-hoc test for adonis (need to update R for this to work)
-library(devtools)
-install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
-library(pairwiseAdonis)
-pairwise.adonis(Y, iris$Species, sim.method = "euclidean",
-                p.adjust.m = "bonferroni")
-
-?pairwise.adonis
-
-# try with dentifera past data
-xyplot(Prevalence ~ BodySize_mm, groups = PulicariaLine2, data = dentifera_past_lines,
-       pch = 16, auto.key = TRUE)
-
-?vegan::betadisper()
-?vegan::vegdist()
-
-
-A <- dentifera_past_lines[ , c("Prevalence", "BodySize_mm")]
-adonis(A ~ dentifera_past_lines$PulicariaLine2, method = "euclidean", permutations = 999)
-pairwise.adonis(A, dentifera_past_lines$PulicariaLine2, sim.method = "bray", p.adjust.m = "bonferroni")
-
-
-# this doesn't work
-X <- dentifera_past_lines[ , "Prevalence"]
-adonis(X ~ dentifera_past_lines$PulicariaLine2, method = "bray", permutations = 999)
-
-
-
-# Try PERMANOVA with both past and metsch prevalence as response variables
-
-
-
-dentifera_past_lines <- dplyr::rename(dentifera_past_lines, Past.Prev = Prevalence)
-dentifera_metsch_lines <- dplyr::rename(dentifera_metsch_lines, Metsch.Prev = Prevalence)
-dentifera_metsch_lines2 <- select(dentifera_metsch_lines, PulicariaLine2, Rep, Metsch.Prev)
-
-
-new_data <- full_join(dentifera_past_lines, dentifera_metsch_lines2)
-
-?xyplot
-xyplot(Past.Prev ~ Metsch.Prev, groups = PulicariaLine2, data = new_data,
-       pch = 16, auto.key = TRUE)
-
-B <- new_data[ , c("Past.Prev", "Metsch.Prev")]
-adonis(B ~ new_data$PulicariaLine2, method = "euclidean", permutations = 999)
-pairwise.adonis(A, new_data$PulicariaLine2, sim.method = "euclidean", p.adjust.m = "bonferroni")
-
-
-adonis(B ~ new_data$PulicariaLine2 * new_data$BodySize_mm, method = "euclidean", permutations = 999)

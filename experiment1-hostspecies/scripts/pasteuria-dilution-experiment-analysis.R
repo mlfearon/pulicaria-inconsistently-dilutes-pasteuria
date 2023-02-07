@@ -1,16 +1,16 @@
-## Experiment 1 Code for "Mixed evidence for a dilution effect in Daphnia communities infected by a bacterial parasite"
+## Experiment 1 Code for "Inconsistent dilution: Experimental but not field evidence for a dilution effect in Daphnia–bacteria interactions"
 
 
 # Submitted to: Oecologia
 
 
 # Code written by Michelle Fearon
-# Last updated: Jan 12, 2023
+# Last updated: Feb 6, 2023
 
 ## This code analyzes Camden's 2015 Pasteuria Dilution Experiment 
 ## Testing whether resistant Daphnia dentifera, D. retrocurva, or D. pulicaria host species 
 ## can dilute pasteuria using similar experimental conditions to previous tests showing 
-## D. pulicaria diluting Metschnikowia (Hall et al 2009)
+## D. pulicaria diluting Metschnikowia (Hall et al. 2009)
 
 
 # libraries
@@ -55,11 +55,12 @@ experiment <- experiment %>%
 
 experiment$Diluter.Density_factor <- as.factor(experiment$Diluter.Density)
 
+# check N per treatment combination
 table(experiment$Diluter.Species)
 table(experiment$Diluter.Density)
 
-# model to test for dilution in pasteuria infected dentifera
 
+# model to test for dilution in pasteuria infected dentifera
 mod <- glm(Prevalence ~ Diluter.Species * Diluter.Density, family = "binomial", weights = Total.Tested, data = experiment)
 summary(mod)
 vif(mod)
@@ -73,6 +74,8 @@ mod2 <- glmer(Prevalence ~ Diluter.Species * Diluter.Density + (1|ID), family = 
 summary(mod2)
 vif(mod2)
 plot(mod2)
+
+### Appendix S1: Table S1
 Anova(mod2)
 overdisp_fun(mod2)  # overdispersion is controlled for now.
 
@@ -82,7 +85,7 @@ overdisp_fun(mod2)  # overdispersion is controlled for now.
 me <- ggpredict(mod2, c("Diluter.Density", "Diluter.Species"))
 plot(me, add.data = T)
 
-
+##### Figure 1
 plot_predict <- ggplot(data = me, aes(x = x, y = predicted)) +
   geom_line(aes(color = group), size = 1) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = 0.2) +
@@ -91,9 +94,7 @@ plot_predict <- ggplot(data = me, aes(x = x, y = predicted)) +
   scale_fill_brewer(palette = "Dark2", name = "Diluter Species", labels = c(bquote(italic("D. dentifera")), bquote(italic("D. pulicaria")), bquote(italic("D. retrocurva")))) +
   theme_classic()
 print(plot_predict)
-ggsave(here("experiment1-hostspecies", "figures", "DilutionExperiment_predicted.tiff"), plot = plot_predict, dpi = 300, width = 12, height = 10, units = "cm", compression="lzw")
-
-
+#ggsave(here("experiment1-hostspecies", "figures", "DilutionExperiment_predicted.tiff"), plot = plot_predict, dpi = 300, width = 12, height = 10, units = "cm", compression="lzw")
 
 # add points to the plot above.
 plot_predict2 <- plot_predict + 
@@ -112,27 +113,28 @@ ggsave(here("experiment1-hostspecies", "figures", "Figure1.tiff"), plot = plot_p
 a <- emmeans(mod2, specs = pairwise ~ Diluter.Species | Diluter.Density, type = "response")
 a
 
+### Appendix S1: Table S2 & S3
 # estimates of the slopes of each diluter species based on changes in density
 ab <- emtrends(mod2, pairwise ~ Diluter.Species, var="Diluter.Density", type = "response", infer = c(TRUE, TRUE), at=list(Diluter.Density=c(4)))
 ab
 
 
+# calculate the mean prevalence for each diluter host species and density combination
 mean_prev <- experiment %>%
   group_by(Diluter.Species, Diluter.Density_factor) %>%
   summarize(Prev_mean = mean(Prevalence))
 
 
-## CUT FOR FINAL VERSION OF CODE??
 
 
+#### Alternative test using diluter denisty as a factor (ultimately show very similar results to analysis above)
 # model to test for dilution in pasteria infected dentifera (density as a factor rather than continuous)
-
 mod3 <- glm(Prevalence ~ Diluter.Species * Diluter.Density_factor, family = "binomial", weights = Total.Tested, data = experiment)
 summary(mod3)
 vif(mod3)
 plot(mod3)
 Anova(mod3)
-
+overdisp_fun(mod3) 
 
 
 me3 <- ggpredict(mod3, c("Diluter.Density_factor", "Diluter.Species"))
@@ -148,12 +150,8 @@ b
 # retrocurva is different from dentifera at density of 4 and 6
 
 
-
-
-
 # figure of prevalence across diluter density by host species 
 # based on raw data
-
 exp <- experiment %>% 
   group_by(Diluter.Species, Diluter.Density) %>%
   summarize(prevalence = mean(Prevalence), sd = sd(Prevalence), se = sd(Prevalence)/sqrt(length(Prevalence))) %>%

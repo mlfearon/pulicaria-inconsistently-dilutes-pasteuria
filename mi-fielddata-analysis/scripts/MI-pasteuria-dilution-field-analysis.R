@@ -1,17 +1,18 @@
-# Analysis of field Pasteuria data and dilution effect for "Mixed evidence for a dilution effect in Daphnia communities infected by a bacterial parasite"
+# Analysis of field Pasteuria data and dilution effect for "Inconsistent dilution: Experimental but not field evidence for a dilution effect in Daphnia–bacteria interactions"
 
 
 # Submitted to: Oecologia
 
 
 # Code written by Michelle Fearon
-# Last updated: Jan 16, 2023
+# Last updated: Feb 7, 2023
 
 ## This code produces four models to test how host density, species richness, and year correlate with
 ## either maximal Pasteuria prevalence (models A & B) or area under the prevalence curve (models C & D) in D. dentifera, 
 ## with two models for each response variable. Models A & C included the host densities and species richness 
 ## from the date of max prevalence, while models B & D included the mean host densities and total species richness 
-## for each lake and year combination. We then used model selection to determine the best version of each model A-D.
+## for each lake and year combination. We then used model selection to determine the best version of each model A-D,
+## and complemented that approach with model averaging.
 
 
 #libraries
@@ -229,18 +230,19 @@ sum.data_dentifera$OLRE <- seq_len(nrow(sum.data_dentifera))
 
 
 # Test the correlation between Pasteuria Maximum prevalence and Area Under the prevalence curve
-cor.test(sum.data_dentifera$past.max.prev, sum.data_dentifera$pasteuria.auc)
 cor.test(sum.data_dentifera$past.max.prev, sum.data_dentifera$pasteuria.auc_log)
 
 
+# species richness is correlated with total density (r = 0.35, p = 0.006), but not individual species densities
 cor.test(sum.data_dentifera$species.richness, sum.data_dentifera$mean.tot.density)
 cor.test(sum.data_dentifera$species.richness, sum.data_dentifera$mean.dentifera.density)
 cor.test(sum.data_dentifera$species.richness, sum.data_dentifera$mean.retrocurva.density)
 cor.test(sum.data_dentifera$species.richness, sum.data_dentifera$mean.pulicaria.density)
 
 
-
+####################################################
 ## MODEL A
+
 ###  Initial Model of MAX Pasteuria prev in dentifera, with densities at max prev * Year 
 mod <- glmer(past.max.prev ~ pulicaria.at.max_z + dentifera.at.max_z + retrocurva.at.max_z + richness.at.max_z +
                Year + pulicaria.at.max_z:Year + dentifera.at.max_z:Year + retrocurva.at.max_z:Year + (1|Lake)+ (1|OLRE), 
@@ -249,8 +251,6 @@ summary(mod)
 vif(mod)
 overdisp_fun(mod)
 Anova(mod)
-
-
 
 
 # model section ranking by AICc using ML
@@ -262,14 +262,20 @@ print(msc)
 fmList <- get.models(msc, delta < 2)
 # Because the models originate from 'dredge(..., rank = AICc, REML = FALSE)',
 # the default weights in 'model.avg' are ML based:
+
+#### Table 1
 summary(model.avg(fmList))
 
+
+
+## Appendix S1 Table S5
 # Export AIC table for Model A (delta AIC < 4)
 msc_A <- filter(msc, delta < 4)
 write.csv(msc_A, here("mi-fielddata-analysis/results/ModelA_AIC_table.csv"), quote = F, row.names = F)
 
 
-# top model A
+## Appendix S1 Table S9
+# Top Model A
 modA <- glmer(past.max.prev ~ pulicaria.at.max_z + (1|Lake) + (1|OLRE), 
              family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
 summary(modA)
@@ -290,6 +296,7 @@ me1_a$PulicMax <- exp(me1_a$PulicMax_log)
 display.brewer.pal(3, "Dark2")
 brewer.pal(3, "Dark2")
 range(me1_a$PulicMax)
+
 # Figure 2A: Model A
 # plot of Max Pasteuria prevalence vs pulicaria density at max prevalence
 MaxPrev_Pulic <- ggplot(me1_a, aes(x = PulicMax, y = predicted)) +
@@ -318,8 +325,9 @@ summary(modA_3)
 
 
 
-
+############################################
 ## MODEL B
+
 ### Model of MAX Pasteuria prev in dentifera, with mean densities * Year 
 mod2 <- glmer(past.max.prev ~ mean.pulicaria.density_z + mean.dentifera.density_z + mean.retrocurva.density_z + species.richness_z + Year +
                mean.pulicaria.density_z:Year + mean.retrocurva.density_z:Year + mean.dentifera.density_z:Year + (1|Lake) + (1|OLRE), 
@@ -337,17 +345,20 @@ print(msc2)
 fmList2 <- get.models(msc2, delta < 2)
 # Because the models originate from 'dredge(..., rank = AICc, REML = FALSE)',
 # the default weights in 'model.avg' are ML based:
+
+#### Table 1
 summary(model.avg(fmList2))
 
 
 
+## Appendix S1 Table S6
 # Export AIC table for Model B (delta AIC < 4)
 msc_B <- filter(msc2, delta < 4)
 write.csv(msc_B, here("mi-fielddata-analysis/results/ModelB_AIC_table.csv"), quote = F, row.names = F)
 
 
-
-# top model B
+## Appendix S1 Table S9
+# Top Model B
 mod2B <- glmer(past.max.prev ~ mean.dentifera.density_z + (1|Lake) + (1|OLRE), 
              family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
 summary(mod2B)
@@ -377,7 +388,7 @@ me2_b$DentMean_log <- t((t(me2_b$x) * dent_sd) + dent_mean)
 me2_b$DentMean <- exp(me2_b$DentMean_log)
 
 
-
+## Figure 2B: Model B
 # plot of Max Pasteuria prevalence vs mean dentifera density
 MaxPrev_Dent <- ggplot(me2_b, aes(x = DentMean, y = predicted)) +
   geom_line(size = 1, color = "#1B9E77") +
@@ -394,10 +405,11 @@ ggsave(here("mi-fielddata-analysis/figures/MaxPastPrev_MeanDentifera_predict_col
 
 
 
-
+##################################
 ## MODEL C
+
 ##### Models of AUC Pasteuria prev in dentifera, with densities at max prev * Year 
-sum.data_dentifera <- filter(sum.data_dentifera, !is.na(pasteuria.auc))  # remove one instance of NA where there was only a single date where enough dentifera were counted during the season, so a max prev could be caluclated but not AUC
+sum.data_dentifera <- filter(sum.data_dentifera, !is.na(pasteuria.auc))  # remove one instance of NA where there was only a single date where enough dentifera were counted during the season, so a max prev could be caluclated but not AUC (Whitmore 2016 removed)
 
 mod3 <- lmer(pasteuria.auc_log ~ pulicaria.at.max_z + dentifera.at.max_z + retrocurva.at.max_z + richness.at.max_z + Year + 
                pulicaria.at.max_z:Year + dentifera.at.max_z:Year + retrocurva.at.max_z:Year + (1|Lake), data = sum.data_dentifera) 
@@ -419,22 +431,24 @@ print(msc3)
 fmList3 <- get.models(msc3, delta < 2)
 # Because the models originate from 'dredge(..., rank = AICc, REML = FALSE)',
 # the default weights in 'model.avg' are ML based:
+
+#### Table 1
 summary(model.avg(fmList3))
 
 
+## Appendix S1 Table S7
 # Export AIC table for Model C (delta AIC < 4)
 msc_C <- filter(msc3, delta < 4)
 write.csv(msc_C, here("mi-fielddata-analysis/results/ModelC_AIC_table.csv"), quote = F, row.names = F)
 
 
-
-# top model C
+## Appendix S1 Table S9
+# Top Model C
 mod3C <- lmer(pasteuria.auc_log ~ dentifera.at.max_z + (1|Lake), data = sum.data_dentifera)
 summary(mod3C)
 
 
 # second top model is the Null model
-
 
 
 # third top model
@@ -465,6 +479,7 @@ me3_c$conf.high_backtransformed <- exp(me3_c$conf.high)-1
 range(me3_c$predicted)
 range(me3_c$predicted_backtransformed)
 
+# Figure 2C: Model C
 # plot of Max Pasteuria prevalence vs dentifera density at max prevalence
 AUC_Dent <- ggplot(me3_c, aes(x = DentMax, y = predicted_backtransformed)) +
   geom_line(size = 1, color = "#1B9E77") +
@@ -480,8 +495,9 @@ ggsave(here("mi-fielddata-analysis/figures/AUCPastPrev_DentiferaAtMax_predict_co
 
 
 
-
+################################
 ## MODEL D
+
 ##### Models of AUC Pasteuria prev in dentifera, with mean densities * Year 
 mod4 <- lmer(pasteuria.auc_log ~ mean.pulicaria.density_z + mean.dentifera.density_z + mean.retrocurva.density_z + species.richness_z + Year +
                mean.pulicaria.density_z:Year + mean.dentifera.density_z:Year + mean.retrocurva.density_z:Year + (1|Lake), data = sum.data_dentifera)
@@ -494,8 +510,6 @@ overdisp_fun(mod4)
 Anova(mod4)
 
 
-
-
 # model section ranking by AICc using ML
 options(na.action = "na.fail")
 msc4 <- dredge(mod4, rank = "AICc", trace = TRUE, REML = FALSE)
@@ -505,26 +519,25 @@ print(msc4)
 fmList4 <- get.models(msc4, delta < 2)
 # Because the models originate from 'dredge(..., rank = AICc, REML = FALSE)',
 # the default weights in 'model.avg' are ML based:
+
+#### Table 1
 summary(model.avg(fmList4))
 
-
+## Appendix S1 Table S8
 # Export AIC table for Model D (delta AIC < 4)
 msc_D <- filter(msc4, delta < 4)
 write.csv(msc_D, here("mi-fielddata-analysis/results/ModelD_AIC_table.csv"), quote = F, row.names = F)
 
 
-
-# top model D
+## Appendix S1 Table S9
+# Top Model D
 mod4D <- lmer(pasteuria.auc_log ~ mean.dentifera.density_z + (1|Lake), data = sum.data_dentifera)
 summary(mod4D)
-
-
 
 
 # second top model
 mod4D_2 <- lmer(pasteuria.auc_log ~ mean.dentifera.density_z + mean.retrocurva.density_z + (1|Lake), data = sum.data_dentifera)
 summary(mod4D_2)
-
 
 
 # Marginal effects from top model
@@ -543,7 +556,7 @@ me4_d$predicted_backtransformed <- exp(me4_d$predicted)-1  #back transform the p
 me4_d$conf.low_backtransformed <- exp(me4_d$conf.low)-1
 me4_d$conf.high_backtransformed <- exp(me4_d$conf.high)-1
 
-
+# Figure 2D: Model D
 # plot of AUC Pasteuria prevalence vs mean dentifera density
 AUC_Dent2 <- ggplot(me4_d, aes(x = DentMean, y = predicted_backtransformed)) +
   geom_line(size = 1, color = "#1B9E77") +
@@ -558,7 +571,7 @@ print(AUC_Dent2)
 ggsave(here("mi-fielddata-analysis/figures/AUCPastPrev_MeanDentifera_predict_color.tiff"), plot = AUC_Dent2, dpi = 300, width = 10, height = 10, units = "cm", compression="lzw")
 
 
-
+# Figure 2, panels A-D
 ### four panel plot of MI field analyses
 MI_full <- ggarrange(MaxPrev_Pulic, MaxPrev_Dent, AUC_Dent, AUC_Dent2, ncol = 2, nrow = 2, labels = c("A", "B", "C", "D"))
 ggsave(here("mi-fielddata-analysis/figures/Fig2_MI_Field_Analysis_predict_color.tiff"), plot = MI_full, dpi = 300, width = 8, height = 8, units = "in", compression="lzw")
@@ -568,15 +581,12 @@ ggsave(here("mi-fielddata-analysis/figures/Fig2_MI_Field_Analysis_predict_color.
 
 
 
+#######################################
+### Other versions of the analyses using infection density in dentifera that are NOT included in the main text
+#######################################
 
 
-
-
-
-### TO CUT?????
-
-
-##### Models of Pasteuria infection density in dentifera, with densities at max prevalence * Year
+##### Models of Pasteuria infection density in dentifera, with densities at max prevalence * Year (did not include D. dentifera density since that is included in the calculation for the infection density response variable already)
 mod5 <- lmer(log(past.max.inf+1) ~ pulicaria.at.max_z + retrocurva.at.max_z + richness.at.max_z + Year + 
                 pulicaria.at.max_z:Year + retrocurva.at.max_z:Year + (1|Lake), data = sum.data_dentifera) 
 summary(mod5)
@@ -656,70 +666,6 @@ plot(me2, add.data = T)
 
 me3 <- ggpredict(mod6a, c("species.richness_z [all]"))
 plot(me3, add.data = T)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-##### Models of MEAN Pasteuria prev in dentifera
-
-mod10 <- glmer(past.mean.prev ~ mean.pulicaria.density_z + mean.dentifera.density_z + mean.retrocurva.density_z + species.richness_z + Year +
-               mean.pulicaria.density_z:Year + mean.retrocurva.density_z:Year + mean.dentifera.density_z:Year + (1|OLRE), 
-             family = "binomial", weights = mean.total.count, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5))) 
-summary(mod10)
-vif(mod10)
-overdisp_fun(mod10)
-Anova(mod10)
-
-
-
-# model section ranking by AICc using ML
-options(na.action = "na.fail")
-msc10 <- dredge(mod10, rank = "AICc", trace = TRUE, REML = FALSE)
-print(msc10)
-(attr(msc10, "rank.call"))
-# Get the models (fitted by REML, as in the global model)
-fmList10 <- get.models(msc10, delta < 4)
-# Because the models originate from 'dredge(..., rank = AICc, REML = FALSE)',
-# the default weights in 'model.avg' are ML based:
-summary(model.avg(fmList10))
-
-
-# top model
-mod10a <- glmer(past.mean.prev ~ mean.dentifera.density_z + (1|OLRE), 
-               family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
-summary(mod10a)
-
-
-# second top model
-mod10b <- glmer(past.max.prev ~ mean.dentifera.density_z + mean.retrocurva.density_z + (1|OLRE), 
-               family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
-summary(mod10b)
-vif(mod10b)
-overdisp_fun(mod10b)
-Anova(mod10b)
-
-me1 <- ggpredict(mod10, c("mean.pulicaria.density_z [all]", "Year"))
-plot(me1, add.data = T)
-
-me2 <- ggpredict(mod10, c("mean.retrocurva.density_z [all]"))
-plot(me2, add.data = T)
-
-me3 <- ggpredict(mod10, c("mean.dentifera.density_z [all]"))
-plot(me3, add.data = T)
-
-
 
 
 
@@ -830,6 +776,7 @@ data_dent.pulic <- as.data.frame(data_dent.pulic)
 slope <- lm(past.max.prev.pulicaria ~ past.max.prev.dentifera, data = data_dent.pulic)
 summary(slope)
 
+## Appendix S1: Figure S1
 # Make a figure that shows a 1:1 line and paired pasteuria prevalence in pulicaria and dentifera
 prev_dent_pulic <- ggplot(data = data_dent.pulic, aes(x = past.max.prev.dentifera, y = past.max.prev.pulicaria)) +
   geom_jitter(aes(shape = missing.prev), alpha = 0.5, size = 2, height = 0.0005) +
