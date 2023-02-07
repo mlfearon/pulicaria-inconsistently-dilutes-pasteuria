@@ -7,14 +7,17 @@
 
 
 # AUC OF PREVALENCE  ============================================================
-setwd("C:/Users/mlfearon/OneDrive - Umich/PROJECTS/MHMP Daphnia Duffy/Generality of dilution (MHMP)/Data and Code/Cleaning Data")
 
 library(tidyverse)
 library(DescTools)
 library(vegan)
+library(here)
+
+# set the path to the script relative to the project root directory
+here::i_am("mi-fielddata-analysis/scripts/Area Under the Prevalence Curve 2014-2021.R")
 
 
-loop_data <- read.csv("Clean-Data-2014-2021_All-Host-Densities.csv", header = TRUE)
+loop_data <- read.csv(here("mi-fielddata-analysis/data/Clean-Data-2014-2021_All-Host-Densities.csv"), header = TRUE)
 str(loop_data)
 
 
@@ -258,5 +261,5 @@ auc_data_check <- auc_data %>%
       # that produces a higher value due to calculation around the NAs with na.rm = T.
 
 
-write.csv(auc_data, "auc_14to21_prev.csv", quote = F)
+write.csv(auc_data, here("mi-fielddata-analysis/data/auc_14to21_prev.csv"), quote = F)
 
