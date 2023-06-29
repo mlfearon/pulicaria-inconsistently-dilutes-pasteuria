@@ -302,10 +302,12 @@ plot(modA_simResid)  # model looks good
 
 # Reviewer suggested nested models
 # M1: Richness only
-modA1 <- glmer(past.max.prev ~ richness.at.max_z + (1|Year) + (1|Lake)+ (1|OLRE), 
+modA1 <- glmer(past.max.prev ~ species.richness_z*Year + (1|Lake)+ (1|OLRE), 
                family = "binomial", weights = Count.At.Max, data = sum.data_epi_dentifera)
 summary(modA1)  # richness is not significant
-
+Anova(modA1)
+me1_a <- ggpredict(modA1, c("species.richness_z", "Year"))
+plot(me1_a, add.data = T)
 # M2: Richness + dentifera density
 modA2 <- glmer(past.max.prev ~ richness.at.max_z + dentifera.at.max_z + (1|Year) + (1|Lake)+ (1|OLRE), 
                family = "binomial", weights = Count.At.Max, data = sum.data_epi_dentifera)
@@ -981,3 +983,79 @@ prev_dent_pulic <- ggplot(data = data_dent.pulic, aes(x = past.max.prev.dentifer
   theme(axis.text = element_text(size = 10, color = "black"), axis.title = element_text(size = 11, color = "black"))
 prev_dent_pulic
 ggsave(here("mi-fielddata-analysis/figures/MaxPastPrev_PulicariaVsDentifera.tiff"), plot = prev_dent_pulic, dpi = 300, width = 5, height = 4, units = "in", compression="lzw")
+
+
+
+
+
+##############################################################
+# Make figures of prevalence and host densities over time
+##############################################################
+
+# full time series data for all hosts 
+head(data_all)
+summary(data_all)
+
+# data for just dentifera
+head(data)
+summary(data)
+
+data$Year_factor <- as.factor(data$Year)
+
+# Figure of Pasteuria prevalence in dentifera for all lakes and years (2014-2017)
+data_dent_prev_all_years <- filter(data, Host.Species == "dentifera", Julian < 305, Julian > 190)
+
+pastprev_dent_time_allyears <- ggplot(data_dent_prev_all_years, aes(x = Julian, y = pasteuria.prev, color = Year_factor)) +
+  labs(title = "Pasteuria prevalence in D. dentifera through time", y = "Pasteuria Prevalence in D. dentifera", x = "Julian Day") +
+  geom_line() +
+  geom_point(size = 1) +
+  geom_line(aes(y = 0.01), linetype = "dashed", color = "gray") +
+  facet_wrap( ~ Lake, scales = "free_y") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+print(pastprev_dent_time_allyears)
+ggsave("mi-fielddata-analysis/figures/PastPrev_Dentifera_JulianDay_AllYears.tiff", plot = pastprev_dent_time_allyears, dpi = 300, width = 7.5, height = 6, units = "in", compression="lzw")
+
+
+
+
+
+# Figures of Pasteuria prevalence in dentifera, retrocurva, and pulicaria for all lakes and separated by each year
+data_allhost_prev_all_years <- filter(data_all, Host.Species == "dentifera" | Host.Species == "retrocurva" | Host.Species == "pulicaria", Year < 2018, Julian < 305, Julian > 190)
+unique(data_allhost_prev_all_years$Host.Species)
+range(data_allhost_prev_all_years$Julian)
+
+pastprev_allhost_time_allyears <- ggplot(data_allhost_prev_all_years, aes(x = Julian, y = pasteuria.prev, color = Host.Species)) +
+  labs(y = "Pasteuria Prevalence", x = "Julian Day") +
+  geom_line() +
+  geom_point(size = 1) +
+  geom_line(aes(y = 0.01), linetype = "dashed", color = "black") +
+  facet_grid(Year ~ Lake, scales = "free_y") +
+  scale_color_brewer(palette = "Dark2") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position = "bottom")
+print(pastprev_allhost_time_allyears)
+ggsave("mi-fielddata-analysis/figures/PastPrev_AllHost_JulianDay_AllYears.tiff", plot = pastprev_allhost_time_allyears, dpi = 300, width = 11, height = 6.5, units = "in", compression="lzw")
+
+
+
+
+
+# Figures of host density for dentifera, retrocurva, and pulicaria for all lakes and separated by each year
+
+density_allhost_time_allyears <- ggplot(data_allhost_prev_all_years, aes(x = Julian, y = Host.Density+1, color = Host.Species)) +
+  labs(y = "log Host Density + 1", x = "Julian Day") +
+  geom_line() +
+  geom_point(size = 1) +
+  geom_line(aes(y = 1), linetype = "dashed", color = "black") +
+  facet_grid(Year ~ Lake, scales = "free_y") +
+  scale_y_log10() +
+  scale_color_brewer(palette = "Dark2") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position = "bottom")
+print(density_allhost_time_allyears)
+ggsave("mi-fielddata-analysis/figures/Density_AllHost_JulianDay_AllYears.tiff", plot = density_allhost_time_allyears, dpi = 300, width = 11, height = 6.5, units = "in", compression="lzw")
+
+
+
+
+
+
+
