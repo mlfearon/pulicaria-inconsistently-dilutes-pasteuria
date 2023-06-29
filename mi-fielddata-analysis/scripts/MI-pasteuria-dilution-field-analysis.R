@@ -5,7 +5,7 @@
 
 
 # Code written by Michelle Fearon
-# Last updated: Feb 7, 2023
+# Last updated: June 29, 2023
 
 ## This code produces four models to test how host density, species richness, and year correlate with
 ## either maximal Pasteuria prevalence (models A & B) or area under the prevalence curve (models C & D) in D. dentifera, 
@@ -23,6 +23,7 @@ library(DescTools)
 library(lme4)
 library(lmerTest)
 library(car)
+library(DHARMa)
 library(MuMIn)
 library(ggeffects)
 library(ggpubr)
@@ -90,7 +91,7 @@ overdisp_fun <- function(model) {
 #==========================================================================================================
 
 # load cleaned parasite and host density data 2014 - 2017
-data <- read.csv(here("mi-fielddata-analysis/data/Clean-Data-2014-2021_All-Host-Densities.csv"), stringsAsFactors = F)
+data_all <- read.csv(here("mi-fielddata-analysis/data/Clean-Data-2014-2021_All-Host-Densities.csv"), stringsAsFactors = F)
 # Total = total number of daphnia hosts for that species/site/date
 # .inf = the total number of infections for each parasite as a column
 # .prev = the calculated prevalence of each parasite (only when the total host density for that species/site/date > 20)
@@ -99,8 +100,8 @@ data <- read.csv(here("mi-fielddata-analysis/data/Clean-Data-2014-2021_All-Host-
 # total.density = summed density of all host species for that site/date
 
 
-# get data to only include dentifera for main analyeses
-data <- data %>% 
+# get data to only include dentifera for main analyses
+data <- data_all %>% 
   filter(Year != 2018 & Year != 2020 & Year != 2021) %>% 
   filter(Host.Species == "dentifera") %>% # get infection prevalence data for dentifera only
   filter(!is.na(Host.Density)) %>%  # remove sample dates with missing density data
@@ -199,20 +200,31 @@ sum.data  <- left_join(sum.data, auc_data_past)
 sum.data$Year <- as.character(sum.data$Year)
 sum.data$Host.Species <- as.factor(sum.data$Host.Species)
 
-
+View(sum.data)
 # filter out the lake year that doesn't have a valid max prevalence because there was not enough dentifera detected to calculate prevalence
 sum.data <- filter(sum.data, !is.na(Max.Prevalence)) # removed Whitmore in 2015 row.
+
+# Create a data set where lake-years without an epidemic are removed (compare analyses of this data set to the original full data set)
+sum.data_epidemics <- filter(sum.data, Max.Prevalence > 0)  # removes 10 lake-years that did not have Pasteuria epidemics in D. dentifera
+
+#convert to a data frame
 sum.data_dentifera <- as.data.frame(sum.data)
+sum.data_epi_dentifera <- as.data.frame(sum.data_epidemics)
 dim(sum.data_dentifera)
+dim(sum.data_epi_dentifera)
 
 range(sum.data_dentifera$richness.at.max)
 range(sum.data_dentifera$species.richness)
+
+range(sum.data_epi_dentifera$richness.at.max)
+range(sum.data_epi_dentifera$species.richness)
 
 # Center and scale all continuous variables, densities get log + 1 transformation
 sum.data_dentifera$mean.tot.density_z <- as.numeric(scale(log(sum.data_dentifera$mean.tot.density)))
 sum.data_dentifera$mean.dentifera.density_z <- as.numeric(scale(log(sum.data_dentifera$mean.dentifera.density+1)))
 sum.data_dentifera$mean.pulicaria.density_z <- as.numeric(scale(log(sum.data_dentifera$mean.pulicaria.density+1)))
 sum.data_dentifera$mean.retrocurva.density_z <- as.numeric(scale(log(sum.data_dentifera$mean.retrocurva.density+1)))
+sum.data_dentifera$mean.other.density_z <- as.numeric(scale(log(sum.data_dentifera$mean.other.density+1)))
 sum.data_dentifera$species.richness_z <- as.numeric(scale(sum.data_dentifera$species.richness))
 sum.data_dentifera$mean.richness_z <- as.numeric(scale(sum.data_dentifera$mean.richness))
 sum.data_dentifera$mean.shannon_z <- as.numeric(scale(sum.data_dentifera$mean.shannon))
@@ -225,12 +237,32 @@ sum.data_dentifera$richness.at.max_z <- as.numeric(scale(sum.data_dentifera$rich
 sum.data_dentifera$shannon.at.max_z <- as.numeric(scale(sum.data_dentifera$shannon.at.max))
 sum.data_dentifera$pasteuria.auc_log <- as.numeric(log(sum.data_dentifera$pasteuria.auc+1))
 
+sum.data_epi_dentifera$mean.tot.density_z <- as.numeric(scale(log(sum.data_epi_dentifera$mean.tot.density)))
+sum.data_epi_dentifera$mean.dentifera.density_z <- as.numeric(scale(log(sum.data_epi_dentifera$mean.dentifera.density+1)))
+sum.data_epi_dentifera$mean.pulicaria.density_z <- as.numeric(scale(log(sum.data_epi_dentifera$mean.pulicaria.density+1)))
+sum.data_epi_dentifera$mean.retrocurva.density_z <- as.numeric(scale(log(sum.data_epi_dentifera$mean.retrocurva.density+1)))
+sum.data_epi_dentifera$mean.other.density_z <- as.numeric(scale(log(sum.data_epi_dentifera$mean.other.density+1)))
+sum.data_epi_dentifera$species.richness_z <- as.numeric(scale(sum.data_epi_dentifera$species.richness))
+sum.data_epi_dentifera$mean.richness_z <- as.numeric(scale(sum.data_epi_dentifera$mean.richness))
+sum.data_epi_dentifera$mean.shannon_z <- as.numeric(scale(sum.data_epi_dentifera$mean.shannon))
+sum.data_epi_dentifera$dentifera.at.max_z <- as.numeric(scale(log(sum.data_epi_dentifera$dentifera.at.max+1)))
+sum.data_epi_dentifera$pulicaria.at.max_z <- as.numeric(scale(log(sum.data_epi_dentifera$pulicaria.at.max+1)))
+sum.data_epi_dentifera$retrocurva.at.max_z <- as.numeric(scale(log(sum.data_epi_dentifera$retrocurva.at.max+1)))
+sum.data_epi_dentifera$diluter.at.max_z <- as.numeric(scale(log(sum.data_epi_dentifera$diluter.at.max+1)))
+sum.data_epi_dentifera$otherhost.at.max_z <- as.numeric(scale(log(sum.data_epi_dentifera$otherhost.at.max+1)))
+sum.data_epi_dentifera$richness.at.max_z <- as.numeric(scale(sum.data_epi_dentifera$richness.at.max))
+sum.data_epi_dentifera$shannon.at.max_z <- as.numeric(scale(sum.data_epi_dentifera$shannon.at.max))
+sum.data_epi_dentifera$pasteuria.auc_log <- as.numeric(log(sum.data_epi_dentifera$pasteuria.auc+1))
+
 #include observation level random effect
 sum.data_dentifera$OLRE <- seq_len(nrow(sum.data_dentifera))
 
+sum.data_epi_dentifera$OLRE <- seq_len(nrow(sum.data_epi_dentifera))
 
 # Test the correlation between Pasteuria Maximum prevalence and Area Under the prevalence curve
 cor.test(sum.data_dentifera$past.max.prev, sum.data_dentifera$pasteuria.auc_log)
+
+cor.test(sum.data_epi_dentifera$past.max.prev, sum.data_epi_dentifera$pasteuria.auc_log)
 
 
 # species richness is correlated with total density (r = 0.35, p = 0.006), but not individual species densities
@@ -238,6 +270,11 @@ cor.test(sum.data_dentifera$species.richness, sum.data_dentifera$mean.tot.densit
 cor.test(sum.data_dentifera$species.richness, sum.data_dentifera$mean.dentifera.density)
 cor.test(sum.data_dentifera$species.richness, sum.data_dentifera$mean.retrocurva.density)
 cor.test(sum.data_dentifera$species.richness, sum.data_dentifera$mean.pulicaria.density)
+
+cor.test(sum.data_epi_dentifera$species.richness, sum.data_epi_dentifera$mean.tot.density)
+cor.test(sum.data_epi_dentifera$species.richness, sum.data_epi_dentifera$mean.dentifera.density)
+cor.test(sum.data_epi_dentifera$species.richness, sum.data_epi_dentifera$mean.retrocurva.density)
+cor.test(sum.data_epi_dentifera$species.richness, sum.data_epi_dentifera$mean.pulicaria.density)
 
 
 ####################################################
@@ -247,15 +284,55 @@ cor.test(sum.data_dentifera$species.richness, sum.data_dentifera$mean.pulicaria.
 mod <- glmer(past.max.prev ~ pulicaria.at.max_z + dentifera.at.max_z + retrocurva.at.max_z + richness.at.max_z +
                Year + pulicaria.at.max_z:Year + dentifera.at.max_z:Year + retrocurva.at.max_z:Year + (1|Lake)+ (1|OLRE), 
              family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+# test of crossed lake and year random effects (lower AIC, both singular)
+mod <- glmer(past.max.prev ~ pulicaria.at.max_z + dentifera.at.max_z + retrocurva.at.max_z + richness.at.max_z + (1|Year) + (1|Lake)+ (1|OLRE), 
+             family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+# model with crossed random effects and data set where max prev is > zero
+mod_1 <- glmer(past.max.prev ~ pulicaria.at.max_z + dentifera.at.max_z + retrocurva.at.max_z + richness.at.max_z + (1|Year) + (1|Lake)+ (1|OLRE), 
+             family = "binomial", weights = Count.At.Max, data = sum.data_epi_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
 summary(mod)
 vif(mod)
 overdisp_fun(mod)
+testDispersion(mod)
 Anova(mod)
+testDispersion(mod_1)
+modA_simResid <- simulateResiduals(fittedModel = mod_1)
+plot(modA_simResid)  # model looks good
+
+
+# Reviewer suggested nested models
+# M1: Richness only
+modA1 <- glmer(past.max.prev ~ richness.at.max_z + (1|Year) + (1|Lake)+ (1|OLRE), 
+               family = "binomial", weights = Count.At.Max, data = sum.data_epi_dentifera)
+summary(modA1)  # richness is not significant
+
+# M2: Richness + dentifera density
+modA2 <- glmer(past.max.prev ~ richness.at.max_z + dentifera.at.max_z + (1|Year) + (1|Lake)+ (1|OLRE), 
+               family = "binomial", weights = Count.At.Max, data = sum.data_epi_dentifera)
+summary(modA2) # none of the factors are significant
+
+# M3: Richness + dentifera density + pulicaria density
+modA3 <- glmer(past.max.prev ~ richness.at.max_z + dentifera.at.max_z + pulicaria.at.max_z + (1|Year) + (1|Lake)+ (1|OLRE), 
+               family = "binomial", weights = Count.At.Max, data = sum.data_epi_dentifera)
+summary(modA3) # none of the factors are significant
+
+# M4: Richness + dentifera density + pulicaria density + retrocurva density
+modA4 <- glmer(past.max.prev ~ richness.at.max_z + dentifera.at.max_z + pulicaria.at.max_z + retrocurva.at.max_z + (1|Year) + (1|Lake)+ (1|OLRE), 
+               family = "binomial", weights = Count.At.Max, data = sum.data_epi_dentifera)
+summary(modA4) # none of the factors are significant
+
+# M5: Richness + dentifera density + all other host density
+modA5 <- glmer(past.max.prev ~ richness.at.max_z + dentifera.at.max_z + otherhost.at.max_z + (1|Year) + (1|Lake)+ (1|OLRE), 
+               family = "binomial", weights = Count.At.Max, data = sum.data_epi_dentifera)
+summary(modA5) # none of the factors are significant
+
+# compare AIC among the 3 models
+AIC(modA1, modA2, modA3, modA4, modA5)  # modA1 has the lowest AIC
 
 
 # model section ranking by AICc using ML
 options(na.action = "na.fail")
-msc <- dredge(mod, rank = "AICc", trace = TRUE, REML = FALSE)
+msc <- dredge(mod_1, rank = "AICc", trace = TRUE, REML = FALSE)
 print(msc)
 (attr(msc, "rank.call"))
 # Get the models (fitted by REML, as in the global model)
@@ -276,13 +353,13 @@ write.csv(msc_A, here("mi-fielddata-analysis/results/ModelA_AIC_table.csv"), quo
 
 ## Appendix S1 Table S9
 # Top Model A
-modA <- glmer(past.max.prev ~ pulicaria.at.max_z + (1|Lake) + (1|OLRE), 
+modA <- glmer(past.max.prev ~ pulicaria.at.max_z + (1|Year) + (1|Lake) + (1|OLRE), 
              family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
 summary(modA)
 overdisp_fun(modA)
 
 # Marginal effects from top model
-me1_a <- ggpredict(modA, c("pulicaria.at.max_z [all]"))
+me1_a <- ggpredict(modA, c("pulicaria.at.max_z"))
 plot(me1_a, add.data = T)
 
 
@@ -300,7 +377,7 @@ range(me1_a$PulicMax)
 # Figure 2A: Model A
 # plot of Max Pasteuria prevalence vs pulicaria density at max prevalence
 MaxPrev_Pulic <- ggplot(me1_a, aes(x = PulicMax, y = predicted)) +
-  geom_line(size = 1,  color = "#D95F02") +
+  geom_line(linewidth = 1,  color = "#D95F02") +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, fill = "#D95F02") +
   geom_jitter(data = sum.data_dentifera, aes(x = pulicaria.at.max+1, y = past.max.prev), size = 2, alpha = 0.4, width = 0.05, color = "#D95F02", shape = 17) +
   labs(x = bquote(italic("D. pulicaria") ~ "Density at Max Prevalence (no." ~ "m"^-2*")"), y = bquote(atop("Maximal " ~ italic("Pasteuria") ~ "Prevalence", "in" ~italic("D. dentifera")))) +
@@ -332,13 +409,55 @@ summary(modA_3)
 mod2 <- glmer(past.max.prev ~ mean.pulicaria.density_z + mean.dentifera.density_z + mean.retrocurva.density_z + species.richness_z + Year +
                mean.pulicaria.density_z:Year + mean.retrocurva.density_z:Year + mean.dentifera.density_z:Year + (1|Lake) + (1|OLRE), 
              family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
-summary(mod2)
+# try model with crossed random effects of lake and year
+mod2 <- glmer(past.max.prev ~ mean.pulicaria.density_z + mean.dentifera.density_z + mean.retrocurva.density_z + species.richness_z + (1|Year) + (1|Lake) + (1|OLRE), 
+              family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+# model with crossed random effects and data set where max prev is > zero
+mod2_1 <- glmer(past.max.prev ~ mean.pulicaria.density_z + mean.dentifera.density_z + mean.retrocurva.density_z + species.richness_z + (1|Year) + (1|Lake) + (1|OLRE), 
+              family = "binomial", weights = Count.At.Max, data = sum.data_epi_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+
+summary(mod2_1)
 vif(mod2)
 overdisp_fun(mod2)
+testDispersion(mod2_1)
+modB_simResid <- simulateResiduals(fittedModel = mod2_1)
+plot(modB_simResid)  # model looks good
+
+# Reviewer suggested nested models
+# M1: Richness only
+modB1 <- glmer(past.max.prev ~ species.richness_z + (1|Year) + (1|Lake)+ (1|OLRE), 
+               family = "binomial", weights = Count.At.Max, data = sum.data_epi_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e6)))
+summary(modB1)  # richness model failed to converge...
+
+# M2: Richness + dentifera density
+modB2 <- glmer(past.max.prev ~ species.richness_z + mean.dentifera.density_z + (1|Year) + (1|Lake)+ (1|OLRE), 
+               family = "binomial", weights = Count.At.Max, data = sum.data_epi_dentifera)
+summary(modB2) # none of the factors are significant
+
+# M3: Richness + dentifera density + pulicaria density
+modB3 <- glmer(past.max.prev ~ species.richness_z + mean.dentifera.density_z + mean.pulicaria.density_z + (1|Year) + (1|Lake)+ (1|OLRE), 
+               family = "binomial", weights = Count.At.Max, data = sum.data_epi_dentifera)
+summary(modB3) # none of the factors are significant
+
+# M4: Richness + dentifera density + pulicaria density + retrocurva density
+modB4 <- glmer(past.max.prev ~ species.richness_z + mean.dentifera.density_z + mean.pulicaria.density_z + mean.retrocurva.density_z + (1|Year) + (1|Lake)+ (1|OLRE), 
+               family = "binomial", weights = Count.At.Max, data = sum.data_epi_dentifera)
+summary(modB4) # none of the factors are significant
+
+# M5: Richness + dentifera density + all other host density
+modB5 <- glmer(past.max.prev ~ species.richness_z + mean.dentifera.density_z + mean.other.density_z + (1|Year) + (1|Lake)+ (1|OLRE), 
+               family = "binomial", weights = Count.At.Max, data = sum.data_epi_dentifera)
+summary(modB5) # none of the factors are significant
+
+# compare AIC among the 3 models
+AIC(modB1, modB2, modB3, modB4, modB5)  # modB1 has the lowest AIC
+
+
+
 
 # model section ranking by AICc using ML
 options(na.action = "na.fail")
-msc2 <- dredge(mod2, rank = "AICc", trace = TRUE, REML = FALSE)
+msc2 <- dredge(mod2_1, rank = "AICc", trace = TRUE, REML = FALSE)
 print(msc2)
 (attr(msc2, "rank.call"))
 # Get the models (fitted by REML, as in the global model)
@@ -359,13 +478,13 @@ write.csv(msc_B, here("mi-fielddata-analysis/results/ModelB_AIC_table.csv"), quo
 
 ## Appendix S1 Table S9
 # Top Model B
-mod2B <- glmer(past.max.prev ~ mean.dentifera.density_z + (1|Lake) + (1|OLRE), 
-             family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
+mod2B <- glmer(past.max.prev ~ mean.dentifera.density_z + (1|Year) + (1|Lake) + (1|OLRE), 
+             family = "binomial", weights = Count.At.Max, data = sum.data_epi_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
 summary(mod2B)
 overdisp_fun(mod2B)
 
 # second top model
-mod2B_2 <- glmer(past.max.prev ~ mean.dentifera.density_z + Year + (1|Lake) + (1|OLRE), 
+mod2B_2 <- glmer(past.max.prev ~ mean.retrocurva.density_z + (1|Year) + (1|Lake) + (1|OLRE), 
              family = "binomial", weights = Count.At.Max, data = sum.data_dentifera, control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e5)))
 summary(mod2B_2)
 vif(mod2B_2)
@@ -413,13 +532,49 @@ sum.data_dentifera <- filter(sum.data_dentifera, !is.na(pasteuria.auc))  # remov
 
 mod3 <- lmer(pasteuria.auc_log ~ pulicaria.at.max_z + dentifera.at.max_z + retrocurva.at.max_z + richness.at.max_z + Year + 
                pulicaria.at.max_z:Year + dentifera.at.max_z:Year + retrocurva.at.max_z:Year + (1|Lake), data = sum.data_dentifera) 
-summary(mod3)
-vif(mod3)
-plot(mod3)
-qqnorm(resid(mod3))
-qqline(resid(mod3)) # somewhat heavy lower tail that falls off of the QQ normal line
+# try model with year and lake as crossed random effects
+mod3 <- lmer(pasteuria.auc_log ~ pulicaria.at.max_z + dentifera.at.max_z + retrocurva.at.max_z + richness.at.max_z + (1|Year) + (1|Lake), 
+             data = sum.data_dentifera) 
+# model with year random effect and data set where max prev is > zero
+mod3_1 <- lmer(pasteuria.auc_log ~ pulicaria.at.max_z + dentifera.at.max_z + retrocurva.at.max_z + richness.at.max_z + (1|Year) + (1|Lake), 
+             data = sum.data_epi_dentifera) 
+summary(mod3_1)
+AIC(mod3_1)
+vif(mod3_1)
+plot(mod3_1)
+qqnorm(resid(mod3_1))
+qqline(resid(mod3_1)) # somewhat heavy lower tail that falls off of the QQ normal line (looks better when using data with max prev > 0)
 overdisp_fun(mod3)
 Anova(mod3)
+
+
+
+# Reviewer suggested nested models
+# M1: Richness only
+modC1 <- lmer(pasteuria.auc_log ~ richness.at.max_z + (1|Year) + (1|Lake), data = sum.data_epi_dentifera)
+summary(modC1)  # richness is not sig
+AIC(modC1)
+
+# M2: Richness + dentifera density
+modC2 <- lmer(pasteuria.auc_log ~ richness.at.max_z + dentifera.at.max_z + (1|Year) + (1|Lake), data = sum.data_epi_dentifera)
+summary(modC2) # none of the factors are significant
+
+# M3: Richness + dentifera density + pulicaria density
+modC3 <- lmer(pasteuria.auc_log ~ richness.at.max_z + dentifera.at.max_z + pulicaria.at.max_z + (1|Year) + (1|Lake), data = sum.data_epi_dentifera)
+summary(modC3) # none of the factors are significant
+
+# M4: Richness + dentifera density + pulicaria density + retrocurva density
+modC4 <- lmer(pasteuria.auc_log ~ richness.at.max_z + dentifera.at.max_z + pulicaria.at.max_z + retrocurva.at.max_z + (1|Year) + (1|Lake), data = sum.data_epi_dentifera)
+summary(modC4) # none of the factors are significant
+
+# M5: Richness + dentifera density + all other host density
+modC5 <- lmer(pasteuria.auc_log ~ richness.at.max_z + dentifera.at.max_z + otherhost.at.max_z + (1|Year) + (1|Lake), data = sum.data_epi_dentifera)
+summary(modC5) # none of the factors are significant
+
+# compare AIC among the 3 models
+AIC(modC1, modC2, modC3, modC4, modC5)  # modC1 has the lowest AIC
+
+
 
 
 # model section ranking by AICc using ML
@@ -444,7 +599,7 @@ write.csv(msc_C, here("mi-fielddata-analysis/results/ModelC_AIC_table.csv"), quo
 
 ## Appendix S1 Table S9
 # Top Model C
-mod3C <- lmer(pasteuria.auc_log ~ dentifera.at.max_z + (1|Lake), data = sum.data_dentifera)
+mod3C <- lmer(pasteuria.auc_log ~ dentifera.at.max_z + (1|Year)+ (1|Lake), data = sum.data_epi_dentifera)
 summary(mod3C)
 
 
@@ -501,13 +656,48 @@ ggsave(here("mi-fielddata-analysis/figures/AUCPastPrev_DentiferaAtMax_predict_co
 ##### Models of AUC Pasteuria prev in dentifera, with mean densities * Year 
 mod4 <- lmer(pasteuria.auc_log ~ mean.pulicaria.density_z + mean.dentifera.density_z + mean.retrocurva.density_z + species.richness_z + Year +
                mean.pulicaria.density_z:Year + mean.dentifera.density_z:Year + mean.retrocurva.density_z:Year + (1|Lake), data = sum.data_dentifera)
-summary(mod4)
+# try model with crossed year and lake random effects
+mod4 <- lmer(pasteuria.auc_log ~ mean.pulicaria.density_z + mean.dentifera.density_z + mean.retrocurva.density_z + species.richness_z + (1|Year) + (1|Lake), data = sum.data_dentifera)
+# model with year random effect and data set where max prev is > zero
+mod4_1 <- lmer(pasteuria.auc_log ~ mean.pulicaria.density_z + mean.dentifera.density_z + mean.retrocurva.density_z + species.richness_z + (1|Year) + (1|Lake), data = sum.data_epi_dentifera)
+
+summary(mod4_1)
 vif(mod4)
-plot(mod4)
-qqnorm(resid(mod4))
-qqline(resid(mod4))
-overdisp_fun(mod4)
-Anova(mod4)
+plot(mod4_1)
+qqnorm(resid(mod4_1))
+qqline(resid(mod4_1))  # tails are a bit above of the qqline
+Anova(mod4_1)
+AIC(mod4)
+
+
+# Reviewer suggested nested models
+# M1: Richness only
+modD1 <- lmer(pasteuria.auc_log ~ mean.shannon_z + (1|Year) + (1|Lake), data = sum.data_epi_dentifera)
+summary(modD1)  # richness is not sig
+AIC(modD1)
+
+# M2: Richness + dentifera density
+modD2 <- lmer(pasteuria.auc_log ~ species.richness_z + mean.dentifera.density_z + (1|Year) + (1|Lake), data = sum.data_epi_dentifera)
+summary(modD2) # none of the factors are significant
+
+# M3: Richness + dentifera density + pulicaria density
+modD3 <- lmer(pasteuria.auc_log ~ species.richness_z + mean.dentifera.density_z + mean.pulicaria.density_z + (1|Year) + (1|Lake), data = sum.data_epi_dentifera)
+summary(modD3) # none of the factors are significant
+
+# M4: Richness + dentifera density + pulicaria density + retrocurva density
+modD4 <- lmer(pasteuria.auc_log ~ species.richness_z + mean.dentifera.density_z + mean.pulicaria.density_z + mean.retrocurva.density_z + (1|Year) + (1|Lake), data = sum.data_epi_dentifera)
+summary(modD4) # none of the factors are significant
+
+# M5: Richness + dentifera density + all other host density
+modD5 <- lmer(pasteuria.auc_log ~ species.richness_z + mean.dentifera.density_z + mean.other.density_z + (1|Year) + (1|Lake), data = sum.data_epi_dentifera)
+summary(modD5) # none of the factors are significant
+
+# compare AIC among the 3 models
+AIC(modD1, modD2, modD3, modD4, modD5)  # modD1 has the lowest AIC
+
+
+
+
 
 
 # model section ranking by AICc using ML
@@ -531,7 +721,7 @@ write.csv(msc_D, here("mi-fielddata-analysis/results/ModelD_AIC_table.csv"), quo
 
 ## Appendix S1 Table S9
 # Top Model D
-mod4D <- lmer(pasteuria.auc_log ~ mean.dentifera.density_z + (1|Lake), data = sum.data_dentifera)
+mod4D <- lmer(pasteuria.auc_log ~ mean.dentifera.density_z + (1|Year) + (1|Lake), data = sum.data_dentifera)
 summary(mod4D)
 
 
@@ -548,8 +738,8 @@ plot(me4_d, add.data = T)
 
 # recalculate original mean Dentifera density 
 me4_d$x 
-dent_mean <- mean(log(sum.data_dentifera$mean.dentifera.density+1)) # mean of original richness from disease data set
-dent_sd <- sd(log(sum.data_dentifera$mean.dentifera.density+1)) # sd of original richness from disease data set
+dent_mean <- mean(log(sum.data_dentifera$mean.dentifera.density+1)) # mean of original mean Dentifera density 
+dent_sd <- sd(log(sum.data_dentifera$mean.dentifera.density+1)) # sd of original mean Dentifera density 
 me4_d$DentMean_log <- t((t(me4_d$x) * dent_sd) + dent_mean)
 me4_d$DentMean <- exp(me4_d$DentMean_log)
 me4_d$predicted_backtransformed <- exp(me4_d$predicted)-1  #back transform the predicted and conf interval values from log+1 
