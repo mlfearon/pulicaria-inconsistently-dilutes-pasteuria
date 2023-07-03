@@ -5,7 +5,7 @@
 
 
 # Code written by Michelle Fearon
-# Last updated: June 29, 2023
+# Last updated: July 3, 2023
 
 ## This code produces four models to test how host density, species richness, and year correlate with
 ## either maximal Pasteuria prevalence (models A & B) or area under the prevalence curve (models C & D) in D. dentifera, 
