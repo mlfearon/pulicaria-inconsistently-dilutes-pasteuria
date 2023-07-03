@@ -5,7 +5,7 @@
 
 
 # Code written by Michelle Fearon
-# Last updated: Feb 6, 2023
+# Last updated: July 3, 2023
 
 ## This code analyzes Michelle's 2021 Dilution Follow-up Experiment 
 ## Testing whether different D. pulicaria genotypes have a different capacity
@@ -23,6 +23,7 @@ library(ggplot2)
 library(ggpubr)
 library(car)
 library(MuMIn)
+library(DHARMa)
 library(emmeans)
 library(olsrr)
 library(RColorBrewer)
@@ -205,10 +206,14 @@ dim(dentifera_past_lines2)
 ### Dentifera Metsch prevalence models
 
 # first test comparing diluter treatments to controls
-dent_metsch_mod <- glm(Prevalence ~ Treatment, family = "binomial", weights = N, data = dentifera_metsch)
+dent_metsch_mod <- glmmTMB(Prevalence ~ Treatment, family = "binomial", weights = N, data = dentifera_metsch)
 summary(dent_metsch_mod)
-Anova(dent_metsch_mod, test.statistic = "Wald")  # not significant interaction between genotype and bodysize on prevalence
+Anova(dent_metsch_mod) 
 overdisp_fun(dent_metsch_mod)
+testDispersion(dent_metsch_mod)
+testZeroInflation(dent_metsch_mod)
+dent_metsch_mod_simResid <- simulateResiduals(fittedModel = dent_metsch_mod)
+plot(dent_metsch_mod_simResid) # model looks good
 
 # pairwise comparison of control vs diluter treatments
 metsch_treatment <- emmeans(dent_metsch_mod, specs = pairwise ~ Treatment, type = "response")
@@ -236,17 +241,20 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_Diluter-v-Contr
 
 
 #  Next test for effects of pulicaria genotype and body size, and their interaction (removed the controls and the Pine genotype that did not have any infection)
-dent_metsch_mod2 <- glm(Prevalence ~ PulicariaLine2 * BodySize_mm, family = "binomial", weights = N, data = dentifera_metsch_lines2)
+dent_metsch_mod2 <- glmmTMB(Prevalence ~ PulicariaLine2 * BodySize_mm, family = "binomial", weights = N, data = dentifera_metsch_lines2)
 summary(dent_metsch_mod2)
-vif(dent_metsch_mod2, type = "predictor")
 overdisp_fun(dent_metsch_mod2)
+testDispersion(dent_metsch_mod2)
+testZeroInflation(dent_metsch_mod2)
+dent_metsch_mod2_simResid <- simulateResiduals(fittedModel = dent_metsch_mod2)
+plot(dent_metsch_mod2_simResid) # model looks good
 
 ### Appendix S1: Table S10
-Anova(dent_metsch_mod2, test.statistic = "Wald")  # no significant interaction between genotype and bodysize on prevalence
+Anova(dent_metsch_mod2)  # no significant interaction between genotype and bodysize on prevalence
 
 
 # calculates the pairwise tests for each genus within each site 
-#(determines if there are sig differences in metsch prev between each pulicaria genotpye for a given body size = 1.89 mm)
+#(determines if there are sig differences in metsch prev between each pulicaria genotpye for a given body size = 1.90 mm)
 a <- emmeans(dent_metsch_mod2, specs = pairwise ~ PulicariaLine2 | BodySize_mm, type = "response")
 a
 
@@ -271,10 +279,14 @@ plot(me, add.data = F)
 
 # Since bodysize was not an important factor in the model, we removed it and focused on genotype effects only (model results presented in main text)
 # Test of effect of pulicaria genotype only on Metsch prevalence (Pine genotype removed from analysis)
-dent_metsch_mod3 <- glm(Prevalence ~ PulicariaLine2, family = "binomial", weights = N, data = dentifera_metsch_lines2)
+dent_metsch_mod3 <- glmmTMB(Prevalence ~ PulicariaLine2, family = "binomial", weights = N, data = dentifera_metsch_lines2)
 summary(dent_metsch_mod3)
-Anova(dent_metsch_mod3, test.statistic = "Wald")
+Anova(dent_metsch_mod3)
 overdisp_fun(dent_metsch_mod3)
+testDispersion(dent_metsch_mod3)
+testZeroInflation(dent_metsch_mod3)
+dent_metsch_mod3_simResid <- simulateResiduals(fittedModel = dent_metsch_mod3)
+plot(dent_metsch_mod3_simResid) # model looks good
 
 predict(dent_metsch_mod3, type = "response")
 dent_metsch_mod3$fitted.values
@@ -337,7 +349,7 @@ pulic_colors <- c(rep("#d95f02", 6), rep("gray",1))
 metsch_predict_a <- plot(me3a, add.data = T, jitter = c(0.5,0.01), colors = pulic_colors) + 
   labs(x = bquote(italic("D. pulicaria")~ "Genotype"), y = bquote(italic("Metschnikowia ")~"Prevalence in" ~ italic("D. dentifera")), title = NULL) + 
   geom_vline(xintercept = 6.5, color = "black", size = 1.5) +
-  geom_text(aes(y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
+  #geom_text(aes(x = x, y = 1.05), label = c("b","b","b","b","ab", "b", "a"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
   theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 11, color = "black"), axis.title.y = element_text(size = 8.5, color = "black"))
 metsch_predict_a
@@ -371,7 +383,7 @@ metsch_predict_b
 ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenotype_logistic.tiff"), dpi = 600, width = 5, height = 4, units = "in", compression="lzw")
 
 
-# try the model above with a rare events logistic regression
+# try the model above with a rare events logistic regression (better than above, but predicted values are still above actual prevalence values for some genotypes)
 library(Zelig)
 dent_metsch_mod3c <- relogit(Prevalence ~ PulicariaLine2, weights = N, data = dentifera_metsch)
 summary(dent_metsch_mod3c)
@@ -396,7 +408,7 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenoty
 
 library(logistf)
 # try the model above with a logistic regression with added covariate (to help model predictions!)
-dent_metsch_mod3d <- flac(lfobject = dent_metsch_mod2b, data = dentifera_metsch)
+dent_metsch_mod3d <- flac(lfobject = dent_metsch_mod3b, data = dentifera_metsch)
 summary(dent_metsch_mod3d)
 
 predict(dent_metsch_mod3d, type = "response")
@@ -439,11 +451,14 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Metsch_PulicariaGenoty
 ### difference in Metsch prevalence among the pulicaria lines, nor with bodysize
 
 #  comparison of pulicaria bodysize against Metsch prevalence in dentifera
-dent_metsch_mod4 <- glm(Prevalence ~ BodySize_mm_mean, family = "binomial", weights = N, data = dentifera_metsch_lines2)
+dent_metsch_mod4 <- glmmTMB(Prevalence ~ BodySize_mm_mean, family = "binomial", weights = N, data = dentifera_metsch_lines2)
 summary(dent_metsch_mod4)
-Anova(dent_metsch_mod4, test.statistic = "Wald")
+Anova(dent_metsch_mod4)
 overdisp_fun(dent_metsch_mod4)
-
+testDispersion(dent_metsch_mod4)
+testZeroInflation(dent_metsch_mod4)
+dent_metsch_mod4_simResid <- simulateResiduals(fittedModel = dent_metsch_mod4)
+plot(dent_metsch_mod4_simResid)
 
 # plot of predicted values of prevalence by pulicaria bodysize
 me4 <- ggpredict(dent_metsch_mod4, c("BodySize_mm_mean [all]"))
@@ -463,10 +478,14 @@ plot(me4, add.data = F) +
 # first test comparing diluter treatments to controls
 # Comparison of diluter vs control treatments for pasteuria
 #  comparison of pulicaria genotype and controls only
-dent_past_mod <- glm(Prevalence ~ Treatment, family = "binomial", weights = N, data = dentifera_past)
+dent_past_mod <- glmmTMB(Prevalence ~ Treatment, family = "binomial", weights = N, data = dentifera_past)
 summary(dent_past_mod)
-Anova(dent_past_mod, test.statistic = "Wald")
+Anova(dent_past_mod)
 overdisp_fun(dent_past_mod)
+testDispersion(dent_past_mod)
+testZeroInflation(dent_past_mod)
+dent_past_mod_simResid <- simulateResiduals(fittedModel = dent_past_mod)
+plot(dent_past_mod_simResid)
 
 
 past_treatment <- emmeans(dent_past_mod, specs = pairwise ~ Treatment, type = "response")
@@ -495,13 +514,17 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Past_Diluter-v-Control
 
 
 #  Next test for effects of pulicaria genotype and body size, and their interaction (removed the controls and the Pine genotype that did not have any infection)
-dent_past_mod2 <- glm(Prevalence ~ PulicariaLine2 * BodySize_mm, family = "binomial", weights = N, data = dentifera_past_lines2)
-summary(dent_past_mod2)  #something isn't quite right about this model, weird predictions
+dent_past_mod2 <- glmmTMB(Prevalence ~ PulicariaLine2 * BodySize_mm, family = "binomial", weights = N, data = dentifera_past_lines2)
+summary(dent_past_mod2)  #something isn't quite right about this model, weird predictions. Doesn't converge.
 vif(dent_past_mod2)
 overdisp_fun(dent_past_mod2)
+testDispersion(dent_past_mod2)
+testZeroInflation(dent_past_mod2)
+dent_past_mod2_simResid <- simulateResiduals(fittedModel = dent_past_mod2)
+plot(dent_past_mod2_simResid)
 
 ## Appendix S1: Table S10
-Anova(dent_past_mod2, test.statistic = "Wald")
+Anova(dent_past_mod2)
 
 # calculates the pairwise tests for each genus within each site 
 #(determines if there are sig differences in Pasteuria prev between each pulicaria genotype for a given body size = 1.89 mm)
@@ -529,11 +552,14 @@ plot(me4, add.data = F)
 # Since bodysize was not an important factor in the model, we removed it and focused on genotype effects only (model results presented in main text)
 # Test of effect of pulicaria genotype only on Pasteuria prevalence (Pine and Clear5 genotypes removed from analysis due to no infection in those genotypes)
 #  comparison of pulicaria genotype and controls only
-dent_past_mod3 <- glm(Prevalence ~ PulicariaLine2, family = "binomial", weights = N, data = dentifera_past_lines2)
+dent_past_mod3 <- glmmTMB(Prevalence ~ PulicariaLine2, family = "binomial", weights = N, data = dentifera_past_lines2)
 summary(dent_past_mod3)
-Anova(dent_past_mod3, test.statistic = "Wald")
+Anova(dent_past_mod3)
 overdisp_fun(dent_past_mod3)
-
+testDispersion(dent_past_mod3)
+testZeroInflation(dent_past_mod3)
+dent_past_mod3_simResid <- simulateResiduals(fittedModel = dent_past_mod3)
+plot(dent_past_mod3_simResid)
 
 
 
@@ -575,10 +601,14 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Figure4.tiff"), plot =
 ### There is a significant difference in Pasteuria prevalence between pulicaria diluters and control treatments, but there is not a significant 
 ### difference in Pasteuria prevalence among the pulicaria lines, nor with bodysize
 # prevalence vs body size
-dent_past_mod4 <- glm(Prevalence ~ BodySize_mm_mean, family = "binomial", weights = N, data = dentifera_past_lines2)
+dent_past_mod4 <- glmmTMB(Prevalence ~ BodySize_mm_mean, family = "binomial", weights = N, data = dentifera_past_lines2)
 summary(dent_past_mod4)  #not significant
-Anova(dent_past_mod4, test.statistic = "Wald")
+Anova(dent_past_mod4)
 overdisp_fun((dent_past_mod4))
+testDispersion(dent_past_mod4)
+testZeroInflation(dent_past_mod4)
+dent_past_mod4_simResid <- simulateResiduals(fittedModel = dent_past_mod4)
+plot(dent_past_mod4_simResid)
 
 # Pasteuria prevalence in dentifera is not affected by pulicaria body size
 

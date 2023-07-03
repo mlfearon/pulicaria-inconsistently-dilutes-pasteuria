@@ -5,7 +5,7 @@
 
 
 # Code written by Michelle Fearon
-# Last updated: Feb 6, 2023
+# Last updated: July 3, 2023
 
 ## This code analyzes Camden's 2015 Pasteuria Dilution Experiment 
 ## Testing whether resistant Daphnia dentifera, D. retrocurva, or D. pulicaria host species 
@@ -16,6 +16,8 @@
 # libraries
 library(dplyr)
 library(lme4)
+library(glmmTMB)
+library(DHARMa)
 library(ggeffects)
 library(ggplot2)
 library(car)
@@ -63,21 +65,29 @@ table(experiment$Diluter.Density)
 # model to test for dilution in pasteuria infected dentifera
 mod <- glm(Prevalence ~ Diluter.Species * Diluter.Density, family = "binomial", weights = Total.Tested, data = experiment)
 summary(mod)
-vif(mod)
-Anova(mod, test.statistic = "Wald")
+Anova(mod, test.statistic = "Chisq")
 overdisp_fun(mod)   # model is overdispersed
 plot(mod)
+testDispersion(mod)
+testZeroInflation(mod)
+mod_simResid <- simulateResiduals(fittedModel = mod)
+plot(mod_simResid)  # model looks good, but has overdispersion
 
 
-# updated model to test for dilution in pasteria infected dentifera (with ID random effect to control for overdispersion)
-mod2 <- glmer(Prevalence ~ Diluter.Species * Diluter.Density + (1|ID), family = "binomial", weights = Total.Tested, data = experiment)
+
+# updated model to test for dilution in pasteria infected dentifera (with beta-binomial distribution to control for overdispersion)
+mod2 <- glmmTMB(Prevalence ~ Diluter.Species * Diluter.Density, family = betabinomial(), weights = Total.Tested, data = experiment)
 summary(mod2)
 vif(mod2)
 plot(mod2)
+testDispersion(mod2)
+testZeroInflation(mod2)
+mod2_simResid <- simulateResiduals(fittedModel = mod2)
+plot(mod2_simResid) # model looks good, overdispersion is controlled
 
 ### Appendix S1: Table S1
 Anova(mod2)
-overdisp_fun(mod2)  # overdispersion is controlled for now.
+
 
 
 
@@ -104,9 +114,9 @@ plot_predict2 <- plot_predict +
   theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 10, color = "black"), axis.title.y = element_text(size = 9, color = "black"), 
         legend.position = "top", legend.title = element_text(size = 8, color = "black"), legend.text = element_text(size = 7, color = "black"), legend.justification = "left", legend.margin = margin(0,0,0,-10), legend.box.margin = margin(0,0,0,-20))
 print(plot_predict2)
-ggsave(here("experiment1-hostspecies", "figures", "Figure1.tiff"), plot = plot_predict2, dpi = 300, width = 3.5, height = 4, units = "in", compression="lzw")
+ggsave(here("experiment1-hostspecies/figures/Figure1.tiff"), plot = plot_predict2, dpi = 300, width = 3.5, height = 4, units = "in", compression="lzw")
 
-
+here()
 
 # calculates the pairwise tests for each genus within each site 
 #(determines if there are sig differences in Pasteuria prev between each host spp for a given host density = 4)
@@ -129,12 +139,15 @@ mean_prev <- experiment %>%
 
 #### Alternative test using diluter denisty as a factor (ultimately show very similar results to analysis above)
 # model to test for dilution in pasteria infected dentifera (density as a factor rather than continuous)
-mod3 <- glm(Prevalence ~ Diluter.Species * Diluter.Density_factor, family = "binomial", weights = Total.Tested, data = experiment)
+mod3 <- glmmTMB(Prevalence ~ Diluter.Species * Diluter.Density_factor, family = betabinomial(), weights = Total.Tested, data = experiment)
 summary(mod3)
 vif(mod3)
 plot(mod3)
 Anova(mod3)
-overdisp_fun(mod3) 
+testDispersion(mod3)
+testZeroInflation(mod3)
+mod3_simResid <- simulateResiduals(fittedModel = mod3)
+plot(mod3_simResid)
 
 
 me3 <- ggpredict(mod3, c("Diluter.Density_factor", "Diluter.Species"))
