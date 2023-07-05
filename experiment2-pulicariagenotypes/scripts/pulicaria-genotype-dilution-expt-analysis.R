@@ -136,7 +136,7 @@ ols_test_breusch_pagan(size_mod) # test of homogenicity of variance is not signi
 size_dif <- emmeans(size_mod, specs = pairwise ~ PulicariaLine, type = "response")
 size_dif   # Yes, body size varies among different pulicaria genotypes
 
-### Appendix S1: Figure S2
+### Appendix S1: Figure S1
 # visualize differences in bodysize among different pulicaria genotypes
 me_size <- ggpredict(size_mod, c("PulicariaLine"))
 plot(me_size, add.data = T) +
@@ -144,7 +144,7 @@ plot(me_size, add.data = T) +
   geom_text(aes(y = 2100), label = c("a","a","b","ab","b", "ab"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
   theme(axis.text = element_text(size = 8, color = "black"), axis.title = element_text(size = 11, color = "black"))
-ggsave(here("experiment2-pulicariagenotypes", "figures", "Pulicaria_BodySize.tiff"), dpi = 600, width = 3, height = 3.5, units = "in", compression="lzw")
+ggsave(here("experiment2-pulicariagenotypes", "figures", "FigS1_Pulicaria_BodySize.tiff"), dpi = 600, width = 3, height = 3.5, units = "in", compression="lzw")
 
 
 ## pulicaria genotypes have significantly different bodysizes
@@ -221,7 +221,7 @@ metsch_treatment
 
 metsch_treatment_prob <- as.data.frame(metsch_treatment$emmeans)
 
-## Figure 4C
+## Figure 2C
 # plot of predicted values of prevalence by diluter treatments vs controls
 me_metsch_treatment <- ggpredict(dent_metsch_mod, c("Treatment"))
 me_metsch_treatment$Treatment2 <- c("Control", "Diluter")
@@ -249,7 +249,7 @@ testZeroInflation(dent_metsch_mod2)
 dent_metsch_mod2_simResid <- simulateResiduals(fittedModel = dent_metsch_mod2)
 plot(dent_metsch_mod2_simResid) # model looks good
 
-### Appendix S1: Table S10
+### Appendix S1: Table S4
 Anova(dent_metsch_mod2)  # no significant interaction between genotype and bodysize on prevalence
 
 
@@ -305,7 +305,7 @@ metsch_prob <- as.data.frame(b$emmeans)
 me2 <- ggpredict(dent_metsch_mod3, c("PulicariaLine2"))
 pulic_colors2 <- c("#d95f02")
 
-## Figure 4D
+## Figure 2D
 metsch_genotype_predict <- ggplot() +
   geom_jitter(data = dentifera_metsch_lines, aes(x = PulicariaLine2, y = Prevalence), color = pulic_colors2, size = 2, width = 0.2, height = 0.01, alpha = 0.6) +
   geom_pointrange(data = metsch_prob, aes(x = PulicariaLine2, y = prob, ymax = asymp.UCL, ymin = asymp.LCL), color = "black", linewidth = 1) +
@@ -494,7 +494,7 @@ past_treatment
 past_treatment_prob <- as.data.frame(past_treatment$emmeans)
 
 
-# Figure 4A
+# Figure 2A
 # plot of predicted values of prevalence by diluter treatments vs controls
 me_past_treatment <- ggpredict(dent_past_mod, c("Treatment"))
 me_past_treatment$Treatment2 <- c("Control", "Diluter")
@@ -523,7 +523,7 @@ testZeroInflation(dent_past_mod2)
 dent_past_mod2_simResid <- simulateResiduals(fittedModel = dent_past_mod2)
 plot(dent_past_mod2_simResid)
 
-## Appendix S1: Table S10
+## Appendix S1: Table S4
 Anova(dent_past_mod2)
 
 # calculates the pairwise tests for each genus within each site 
@@ -576,7 +576,7 @@ past_prob <- as.data.frame(e$emmeans)
 me5 <- ggpredict(dent_past_mod3, c("PulicariaLine2"))
 pulic_colors2 <- c("#d95f02")
 
-## Figure 4D
+## Figure 2B
 past_genotype_predict <- ggplot() +
   geom_jitter(data = dentifera_past_lines, aes(x = PulicariaLine2, y = Prevalence), color = pulic_colors2, size = 2, width = 0.2, height = 0.01, alpha = 0.6) +
   geom_pointrange(data = past_prob, aes(x = PulicariaLine2, y = prob, ymax = asymp.UCL, ymin = asymp.LCL), color = "black", linewidth = 1) +
@@ -590,10 +590,10 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Past_PulicariaGenotype
 
 
 
-## Figure 4, panels A-D
+## Figure 2, panels A-D
 # joint figure of pasteuria and metsch prevalence control vs diluters and prevalence vs pulicaria genotype
-Figure4 <- ggarrange(past_predict_treatment, past_genotype_predict, metsch_predict_treatment, metsch_genotype_predict, labels = c("A", "B", "C", "D"), ncol = 2, nrow = 2, widths = c(3,5))
-ggsave(here("experiment2-pulicariagenotypes", "figures", "Figure4.tiff"), plot = Figure3, dpi = 600, width = 7, height = 6, units = "in", compression="lzw")
+Figure2 <- ggarrange(past_predict_treatment, past_genotype_predict, metsch_predict_treatment, metsch_genotype_predict, labels = c("A", "B", "C", "D"), ncol = 2, nrow = 2, widths = c(3,5))
+ggsave(here("experiment2-pulicariagenotypes", "figures", "Figure2.tiff"), plot = Figure2, dpi = 600, width = 7, height = 6, units = "in", compression="lzw")
 
 
 
