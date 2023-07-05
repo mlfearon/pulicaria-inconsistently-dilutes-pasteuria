@@ -271,9 +271,16 @@ dim(sum.data_epi_dentifera)
 
 range(sum.data_dentifera$richness.at.max)
 range(sum.data_dentifera$species.richness)
+range(sum.data_dentifera$mean.dentifera.density)
+range(sum.data_dentifera$mean.pulicaria.density)
+range(sum.data_dentifera$mean.retrocurva.density)
 
 range(sum.data_epi_dentifera$richness.at.max)
 range(sum.data_epi_dentifera$species.richness)
+mean(sum.data_epi_dentifera$mean.dentifera.density)
+mean(sum.data_epi_dentifera$mean.pulicaria.density)
+mean(sum.data_epi_dentifera$mean.retrocurva.density)
+
 
 # Center and scale all continuous variables, densities get log + 1 transformation
 sum.data_dentifera$mean.tot.density_z <- as.numeric(scale(log(sum.data_dentifera$mean.tot.density)))
@@ -626,12 +633,13 @@ fmListAUG[-c(3:16)] # (need to remove the last model that doesn't converge)
 # Because the models originate from 'dredge(..., rank = AICc, REML = FALSE)',
 # the default weights in 'model.avg' are ML based:
 
+
+###### Appendix S1 Table S7
 #### MODEL AVERAGE 
 summary(model.avg(fmListAUG[-c(3:16)], delta < 2))
 
 
-## Appendix S1 Table SXX
-# Export AIC table for Model XX (delta AIC < 4)
+# Export AIC table (delta AIC < 4)
 msc_AUG <- filter(mscAUG, delta < 4)
 write.csv(msc_AUG, here("mi-fielddata-analysis/results/Model_MaxPrev_AugDensities_AIC_table.csv"), quote = F, row.names = F)
 
@@ -648,6 +656,13 @@ modAUG_second <- glmmTMB(past.max.prev ~ mean.Aug.dentifera.density_z + mean.Aug
 summary(modAUG_second)
 
 
+# Reviewer requested: model with data set where max prev is > zero (no infections in dentifera) [MANUSCRIPT APPENDIX ONLY]
+modAUG_initial2 <- glmmTMB(past.max.prev ~ mean.Aug.pulicaria.density_z + mean.Aug.dentifera.density_z + mean.Aug.retrocurva.density_z + mean.Aug.richness_z + (1|Year) + (1|Lake), 
+                          family = betabinomial, weights = round(Count.At.Max), data = sum.data_epi_dentifera)
+summary(modAUG_initial2)
+mscAUG_2 <- dredge(modAUG_initial2, rank = "AICc", trace = TRUE, REML = FALSE)
+print(mscAUG_2)
+# top model is the Null model by > 2 delta AICc
 
 
 ##################################
@@ -720,13 +735,13 @@ fmList3 <- get.models(msc3, delta < 2)
 summary(model.avg(fmList3))
 
 
-## Appendix S1 Table S7
+## Appendix S1 Table S10
 # Export AIC table for Model C (delta AIC < 4)
 msc_C <- filter(msc3, delta < 4)
 write.csv(msc_C, here("mi-fielddata-analysis/results/ModelC_AIC_table.csv"), quote = F, row.names = F)
 
 
-## Appendix S1 Table S9
+## Appendix S1 Table S12
 # Top Model C
 modC_top <- lmer(pasteuria.auc_log ~ dentifera.at.max_z + (1|Year)+ (1|Lake), data = sum.data_dentifera2)
 summary(modC_top)
@@ -844,13 +859,13 @@ fmList4 <- get.models(msc4, delta < 2)
 #### Table 1
 summary(model.avg(fmList4))  # top model is only model within delta < 2
 
-## Appendix S1 Table S8
+## Appendix S1 Table S11
 # Export AIC table for Model D (delta AIC < 4)
 msc_D <- filter(msc4, delta < 4)
 write.csv(msc_D, here("mi-fielddata-analysis/results/ModelD_AIC_table.csv"), quote = F, row.names = F)
 
 
-## Appendix S1 Table S9
+## Appendix S1 Table S12
 # Top Model D
 modD_top <- lmer(pasteuria.auc_log ~ mean.dentifera.density_z + (1|Year) + (1|Lake), data = sum.data_dentifera2)
 summary(modD_top)
@@ -892,10 +907,10 @@ print(AUC_Dent2)
 ggsave(here("mi-fielddata-analysis/figures/AUCPastPrev_MeanDentifera_predict_color.tiff"), plot = AUC_Dent2, dpi = 300, width = 10, height = 10, units = "cm", compression="lzw")
 
 
-# Figure 2, panels A-D
+# Figure 3, panels A-D
 ### four panel plot of MI field analyses
 MI_full <- ggarrange(MaxPrev_Pulic, MaxPrev_Dent, AUC_Dent, AUC_Dent2, ncol = 2, nrow = 2, labels = c("A", "B", "C", "D"))
-ggsave(here("mi-fielddata-analysis/figures/Fig2_MI_Field_Analysis_predict_color.tiff"), plot = MI_full, dpi = 300, width = 8.1, height = 8, units = "in", compression="lzw")
+ggsave(here("mi-fielddata-analysis/figures/Fig3_MI_Field_Analysis_predict_color.tiff"), plot = MI_full, dpi = 300, width = 8.1, height = 8, units = "in", compression="lzw")
 
 
 
@@ -914,6 +929,7 @@ qqnorm(resid(modAUG2_initial))
 qqline(resid(modAUG2_initial))
 
 
+
 ##### Model Selection and Averaging [APPROACH USED IN THE MANUSCRIPT]
 # model section ranking by AICc using ML
 options(na.action = "na.fail")
@@ -927,9 +943,15 @@ fmListAUG2[-c(3:16)] # (need to remove the last model that doesn't converge)
 # Because the models originate from 'dredge(..., rank = AICc, REML = FALSE)',
 # the default weights in 'model.avg' are ML based:
 
-#### MODEL AVERAGE 
-summary(model.avg(fmListAUG2, delta < 2))  # only the top model has a delta < 2
 
+
+#### MODEL AVERAGE 
+summary(model.avg(fmListAUG2, delta < 2))  # only the top model has a delta < 2 (report the top model L954)
+
+###### Appendix S1 Table S7
+# Top model
+modAUG2_top <- lmer(pasteuria.auc_log ~ mean.Aug.dentifera.density_z + (1|Year) + (1|Lake), data = sum.data_dentifera2)
+summary(modAUG2_top)
 
 ## Appendix S1 Table SXX
 # Export AIC table for Model XX (delta AIC < 4)
@@ -938,14 +960,15 @@ write.csv(msc_AUG2, here("mi-fielddata-analysis/results/Model_IntegratedPrev_Aug
 
 
 
-# Top model
-modAUG2_top <- lmer(pasteuria.auc_log ~ mean.Aug.dentifera.density_z + (1|Year) + (1|Lake), data = sum.data_dentifera2)
-summary(modAUG2_top)
 
 
 
-
-
+# Reviewer requested: model with data set where max prev is > zero (no infections in dentifera) [MANUSCRIPT APPENDIX ONLY]
+modAUG2_initial2 <- lmer(pasteuria.auc_log ~ mean.Aug.pulicaria.density_z + mean.Aug.dentifera.density_z + mean.Aug.retrocurva.density_z + mean.Aug.richness_z + (1|Year) + (1|Lake), data = sum.data_epi_dentifera)
+summary(modAUG2_initial2)
+mscAUG2_2 <- dredge(modAUG2_initial2, rank = "AICc", trace = TRUE, REML = FALSE)
+print(mscAUG2_2)
+# top model is the Null model by > 2 delta AICc
 
 
 
@@ -1145,7 +1168,7 @@ data_dent.pulic <- as.data.frame(data_dent.pulic)
 slope <- lm(past.max.prev.pulicaria ~ past.max.prev.dentifera, data = data_dent.pulic)
 summary(slope)
 
-## Appendix S1: Figure S1
+## Appendix S1: Figure S3
 # Make a figure that shows a 1:1 line and paired pasteuria prevalence in pulicaria and dentifera
 prev_dent_pulic <- ggplot(data = data_dent.pulic, aes(x = past.max.prev.dentifera, y = past.max.prev.pulicaria)) +
   geom_jitter(aes(shape = missing.prev), alpha = 0.5, size = 2, height = 0.0005) +
@@ -1159,7 +1182,7 @@ prev_dent_pulic <- ggplot(data = data_dent.pulic, aes(x = past.max.prev.dentifer
   theme_classic() +
   theme(axis.text = element_text(size = 10, color = "black"), axis.title = element_text(size = 11, color = "black"))
 prev_dent_pulic
-ggsave(here("mi-fielddata-analysis/figures/MaxPastPrev_PulicariaVsDentifera.tiff"), plot = prev_dent_pulic, dpi = 300, width = 5, height = 4, units = "in", compression="lzw")
+ggsave(here("mi-fielddata-analysis/figures/FigS3_MaxPastPrev_PulicariaVsDentifera.tiff"), plot = prev_dent_pulic, dpi = 300, width = 5, height = 4, units = "in", compression="lzw")
 
 
 
@@ -1179,56 +1202,64 @@ summary(data)
 
 data$Year_factor <- as.factor(data$Year)
 
+### Appendix S1: Figure S2
 # Figure of Pasteuria prevalence in dentifera for all lakes and years (2014-2017)
 data_dent_prev_all_years <- filter(data, Host.Species == "dentifera", Julian < 305, Julian > 190)
 
 pastprev_dent_time_allyears <- ggplot(data_dent_prev_all_years, aes(x = Julian, y = pasteuria.prev, color = Year_factor)) +
-  labs(title = "Pasteuria prevalence in D. dentifera through time", y = "Pasteuria Prevalence in D. dentifera", x = "Julian Day") +
+  geom_line(aes(y = 0.01), linetype = "dashed", color = "black") +
+  labs(y = bquote(italic("Pasteuria") ~ "Prevalence in" ~italic("D. dentifera")), x = "Julian Day") +
   geom_line() +
   geom_point(size = 1) +
-  geom_line(aes(y = 0.01), linetype = "dashed", color = "gray") +
+  scale_color_discrete(name = "Year") +
   facet_wrap( ~ Lake, scales = "free_y") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 print(pastprev_dent_time_allyears)
-ggsave("mi-fielddata-analysis/figures/PastPrev_Dentifera_JulianDay_AllYears.tiff", plot = pastprev_dent_time_allyears, dpi = 300, width = 7.5, height = 6, units = "in", compression="lzw")
+ggsave("mi-fielddata-analysis/figures/FigS2_PastPrev_Dentifera_JulianDay_AllYears.tiff", plot = pastprev_dent_time_allyears, dpi = 300, width = 7.5, height = 6, units = "in", compression="lzw")
 
 
-
+filter(data_dent_prev_all_years, is.na(pasteuria.prev))
 
 
 # Figures of Pasteuria prevalence in dentifera, retrocurva, and pulicaria for all lakes and separated by each year
 data_allhost_prev_all_years <- filter(data_all, Host.Species == "dentifera" | Host.Species == "retrocurva" | Host.Species == "pulicaria", Year < 2018, Julian < 305, Julian > 190)
+data_allhost_prev_all_years$Host.Density <- replace(data_allhost_prev_all_years$Host.Density, data_allhost_prev_all_years$Host.Density == 0, min_density)
+data_allhost_prev_all_years$Lake <- replace(data_allhost_prev_all_years$Lake, data_allhost_prev_all_years$Lake == "LittleAppleton", "LittleApp.")
+
+sum(data_allhost_prev_all_years$Host.Density == 0, na.rm = T)
 unique(data_allhost_prev_all_years$Host.Species)
 range(data_allhost_prev_all_years$Julian)
+sum(is.na(data_allhost_prev_all_years$pasteuria.prev))
 
+### Appendix S1: Figure S4
 pastprev_allhost_time_allyears <- ggplot(data_allhost_prev_all_years, aes(x = Julian, y = pasteuria.prev, color = Host.Species)) +
-  labs(y = "Pasteuria Prevalence", x = "Julian Day") +
+  labs(y = bquote(italic("Pasteuria") ~ "Prevalence"), x = "Julian Day") +
   geom_line() +
   geom_point(size = 1) +
   geom_line(aes(y = 0.01), linetype = "dashed", color = "black") +
   facet_grid(Year ~ Lake, scales = "free_y") +
-  scale_color_brewer(palette = "Dark2") +
+  scale_color_brewer(palette = "Dark2", name = "Host Species", labels = c(bquote(italic("D. dentifera")), bquote(italic("D. pulicaria")), bquote(italic("D. retrocurva")))) +
   theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position = "bottom")
 print(pastprev_allhost_time_allyears)
-ggsave("mi-fielddata-analysis/figures/PastPrev_AllHost_JulianDay_AllYears.tiff", plot = pastprev_allhost_time_allyears, dpi = 300, width = 11, height = 6.5, units = "in", compression="lzw")
+ggsave("mi-fielddata-analysis/figures/FigS4_PastPrev_AllHost_JulianDay_AllYears.tiff", plot = pastprev_allhost_time_allyears, dpi = 300, width = 11, height = 6.5, units = "in", compression="lzw")
 
 
 
 
-
+### Appendix S1: Figure S5
 # Figures of host density for dentifera, retrocurva, and pulicaria for all lakes and separated by each year
 
-density_allhost_time_allyears <- ggplot(data_allhost_prev_all_years, aes(x = Julian, y = Host.Density+1, color = Host.Species)) +
-  labs(y = "log Host Density + 1", x = "Julian Day") +
+density_allhost_time_allyears <- ggplot(data_allhost_prev_all_years, aes(x = Julian, y = Host.Density, color = Host.Species)) +
+  labs(y = bquote("Host Density (no." ~ " m"^-2*", log scaled)"), x = "Julian Day") +
+  geom_line(aes(y = min_density), linetype = "dashed", color = "black") +
   geom_line() +
   geom_point(size = 1) +
-  geom_line(aes(y = 1), linetype = "dashed", color = "black") +
   facet_grid(Year ~ Lake, scales = "free_y") +
-  scale_y_log10() +
-  scale_color_brewer(palette = "Dark2") +
+  scale_y_log10(breaks = c(26.9, 100, 1000, 10000, 100000), labels = c("min detection", "100", "1000", "10000", "100000")) +
+  scale_color_brewer(palette = "Dark2", name = "Host Species", labels = c(bquote(italic("D. dentifera")), bquote(italic("D. pulicaria")), bquote(italic("D. retrocurva")))) +
   theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position = "bottom")
 print(density_allhost_time_allyears)
-ggsave("mi-fielddata-analysis/figures/Density_AllHost_JulianDay_AllYears.tiff", plot = density_allhost_time_allyears, dpi = 300, width = 11, height = 6.5, units = "in", compression="lzw")
+ggsave("mi-fielddata-analysis/figures/FigS5_Density_AllHost_JulianDay_AllYears.tiff", plot = density_allhost_time_allyears, dpi = 300, width = 11, height = 6.5, units = "in", compression="lzw")
 
 
 
