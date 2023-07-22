@@ -112,7 +112,7 @@ plot_predict2 <- plot_predict +
   scale_color_brewer(palette = "Dark2", name = "Diluter Species", labels = c(bquote(italic("D. dentifera")), bquote(italic("D. pulicaria")), bquote(italic("D. retrocurva")))) +
   scale_shape(name = "Diluter Species", labels = c(bquote(italic("D. dentifera")), bquote(italic("D. pulicaria")), bquote(italic("D. retrocurva")))) +
   theme(axis.text = element_text(size = 8, color = "black"), axis.title.x = element_text(size = 10, color = "black"), axis.title.y = element_text(size = 9, color = "black"), 
-        legend.position = "top", legend.title = element_text(size = 8, color = "black"), legend.text = element_text(size = 7, color = "black"), legend.justification = "left", legend.margin = margin(0,0,0,-10), legend.box.margin = margin(0,0,0,-20))
+        legend.position = c(0.15,0.38), legend.title = element_text(size = 7, color = "black"), legend.text = element_text(size = 7, color = "black"), legend.justification = "left", legend.margin = margin(0,0,0,-10), legend.box.margin = margin(0,0,0,-20))
 print(plot_predict2)
 ggsave(here("experiment1-hostspecies/figures/Figure1.tiff"), plot = plot_predict2, dpi = 300, width = 3.5, height = 4, units = "in", compression="lzw")
 

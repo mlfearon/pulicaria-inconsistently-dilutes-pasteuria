@@ -141,7 +141,7 @@ size_dif   # Yes, body size varies among different pulicaria genotypes
 me_size <- ggpredict(size_mod, c("PulicariaLine"))
 plot(me_size, add.data = T) +
   labs(y= bquote("Body Size ("*mu*"m)"), x = "Pulicaria Genotype", title = NULL) +
-  geom_text(aes(y = 2100), label = c("a","a","b","ab","b", "ab"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
+  geom_text(aes(y = 2110), label = c("a","a","b","ab","b", "ab"), position = position_dodge(width = 0.4), show.legend = F, size = 10/.pt) +
   theme_classic() +
   theme(axis.text = element_text(size = 8, color = "black"), axis.title = element_text(size = 11, color = "black"))
 ggsave(here("experiment2-pulicariagenotypes", "figures", "FigS1_Pulicaria_BodySize.tiff"), dpi = 600, width = 3, height = 3.5, units = "in", compression="lzw")
@@ -592,7 +592,7 @@ ggsave(here("experiment2-pulicariagenotypes", "figures", "Past_PulicariaGenotype
 
 ## Figure 2, panels A-D
 # joint figure of pasteuria and metsch prevalence control vs diluters and prevalence vs pulicaria genotype
-Figure2 <- ggarrange(past_predict_treatment, past_genotype_predict, metsch_predict_treatment, metsch_genotype_predict, labels = c("A", "B", "C", "D"), ncol = 2, nrow = 2, widths = c(3,5))
+Figure2 <- ggarrange(past_predict_treatment, past_genotype_predict, metsch_predict_treatment, metsch_genotype_predict, labels = c("a", "b", "c", "d"), ncol = 2, nrow = 2, widths = c(3,5))
 ggsave(here("experiment2-pulicariagenotypes", "figures", "Figure2.tiff"), plot = Figure2, dpi = 600, width = 7, height = 6, units = "in", compression="lzw")
 
 

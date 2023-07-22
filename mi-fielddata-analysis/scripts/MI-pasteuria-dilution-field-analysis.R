@@ -109,7 +109,7 @@ min(min_detection$Host.Density)  # 53.8 animals per m squared is the minimum den
 
 # get data to only include dentifera for main analyses
 data <- data_all %>% 
-  filter(Year != 2018 & Year != 2020 & Year != 2021) %>% 
+  filter(Year != 2018, Year != 2020, Year != 2021) %>% 
   filter(Host.Species == "dentifera") %>% # get infection prevalence data for dentifera only
   filter(!is.na(Host.Density)) %>%  # remove sample dates with missing density data
   mutate(past.density.inf = pasteuria.prev * Host.Density, # add pasteuria infected density to data set
@@ -909,7 +909,7 @@ ggsave(here("mi-fielddata-analysis/figures/AUCPastPrev_MeanDentifera_predict_col
 
 # Figure 3, panels A-D
 ### four panel plot of MI field analyses
-MI_full <- ggarrange(MaxPrev_Pulic, MaxPrev_Dent, AUC_Dent, AUC_Dent2, ncol = 2, nrow = 2, labels = c("A", "B", "C", "D"))
+MI_full <- ggarrange(MaxPrev_Pulic, MaxPrev_Dent, AUC_Dent, AUC_Dent2, ncol = 2, nrow = 2, labels = c("a", "b", "c", "d"))
 ggsave(here("mi-fielddata-analysis/figures/Fig3_MI_Field_Analysis_predict_color.tiff"), plot = MI_full, dpi = 300, width = 8.1, height = 8, units = "in", compression="lzw")
 
 
