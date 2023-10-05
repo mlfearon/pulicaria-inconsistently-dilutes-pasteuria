@@ -1,4 +1,4 @@
-# pulicaria-dilutes-pasteuria
+# pulicaria-inconsistently-dilutes-pasteuria
 Data and code for the "Inconsistent dilution: Experimental but not field evidence for a dilution effect in Daphnia–bacteria interactions" manuscript submitted to Oecologia.
 
 ### Abstract
